@@ -2,7 +2,7 @@ import paho.mqtt.client as mqtt
 import messagePreparation as mp
 import initializeGlobals as ig
 import processMessage as pm
-import backupCursor as bc
+
 import pendulum
 import time
 import sys
@@ -25,8 +25,7 @@ def surveyWheelTickSimulator(tickRange, forwards):
 
     return currentTick
 
-def output_data(samples_per_scan, client, send_data, mode, scanRate, scansPerMeter, ticksPerMeter, soc):
-    #print("WE GET HERE")
+def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc):
     #print("=======================")
     #print("ticksPerMeter: " + str(ticksPerMeter))
     #print("scansPerMeter: " + str(scansPerMeter))
@@ -76,7 +75,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, scansPerMet
     newBinNumber = -1 #bin with the highest value
     lastBinNumber = -1 #previous bin
 
-    scan_count = -1
+    scan_count = 0
     initial_samples = samples_per_scan
     scanMessagesSent = 0
     totalTickCount = 0
@@ -85,8 +84,10 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, scansPerMet
 
     nextBackup = 300
 
-    #tickRange = [2, 12]
-    tickRange = [80, 90]
+    tick_high_end = int(binSize * 0.90) 
+    tick_low_end = int(binSize * 0.40)
+
+    tickRange = [tick_low_end, tick_high_end]
     forwards = True
 
     byte_count = 0
@@ -95,8 +96,6 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, scansPerMet
     lastScancountCheck = 0
 
     while True:
-
-        #print("send_data: " + str(send_data))
 
         period = 1.0 / scanRate
 
@@ -166,6 +165,8 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, scansPerMet
                     newTick = surveyWheelTickSimulator(tickRange, forwards)
                     totalTickCount += newTick
 
+                    distance = totalTickCount / ticksPerMeter
+
                     fcurrentBinNumber = totalTickCount / ticksPerScan
                     #print("fcurrentBinNumber: " + str(fcurrentBinNumber)) 
 
@@ -192,7 +193,8 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, scansPerMet
                         encoded_data = base64.b64encode(data_chunk)
                         encoded_data = encoded_data.decode("utf-8")
                     
-                        JSON_GPR = mp.prepareGPRSurveyMessage(scan_count, encoded_data)
+                        JSON_GPR = mp.prepareGPRSurveyMessage(scan_count, encoded_data, distance)
+                        print(JSON_GPR)
                         client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
                         
                     elif currentBinNumber <= newBinNumber and forwards == False:
@@ -226,27 +228,26 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, scansPerMet
                         forwards = True
                         nextBackup += 300
 
-                    #print("=================================")
-
             if mode == "freerunsw":
                 if (time_time() - start) > period:
                     newTick = surveyWheelTickSimulator(tickRange, forwards)
+                    #print(newTick)
                     rawTickCount += newTick
                     data_chunk = data_file.read(samples_per_scan * 4) # unpacks binary data to read as 4-byte int
                     data_chunk_size = samples_per_scan * 4
+
+                    distance = rawTickCount / ticksPerMeter
             
                     data = [data_chunk[0], data_chunk[1], data_chunk[2], data_chunk[3]]
                     data = struct.unpack("I", bytearray(data))
                     data = data[0]
-                    #print("scan_number: " + str(data))
 
                     byte_count += len(data_chunk) # running byte count
                     encoded_data = base64.b64encode(data_chunk)
                     encoded_data = encoded_data.decode("utf-8")
-                    #print(encoded_data)
 
-                    #JSON_GPR = mp.prepareGPRFreerunMessage(scan_count, encoded_data)
-                    JSON_GPR = mp.prepareGPRCombinedMessage(scan_count, rawTickCount, encoded_data)
+                    JSON_GPR = mp.prepareGPRCombinedMessage(scan_count, rawTickCount, encoded_data, distance)
+                    print(JSON_GPR)
                     client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
                     start += period
                     scan_count+=1
@@ -263,15 +264,14 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, scansPerMet
             
                     data = [data_chunk[0], data_chunk[1], data_chunk[2], data_chunk[3]]
                     data = struct.unpack("I", bytearray(data))
-                    data = data[0]
-                    #print("scan_number: " + str(data))
+                    data = data[0] #print("scan_number: " + str(data))
 
                     byte_count += len(data_chunk) # running byte count
                     encoded_data = base64.b64encode(data_chunk)
                     encoded_data = encoded_data.decode("utf-8")
-                    #print(encoded_data)
 
                     JSON_GPR = mp.prepareGPRFreerunMessage(scan_count, encoded_data)
+                    print(JSON_GPR)
                     client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
                     start += period
                     scan_count+=1
@@ -279,10 +279,11 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, scansPerMet
                     if scan_count % 50 == 0 and scan_count != 0:
                         print("scan_count: " + str(scan_count))
    
-        #if GPS_time > ig.ONE_SEC and ig.GPS_TELEM_ENABLED == True:
         if GPS_time > ig.FIFTH_OF_SEC and ig.GPS_TELEM_ENABLED == True:            
         
             if ig.useNemaTalker == False:
+                if GPS_file_line == len(GPS_data):
+                    GPS_file_line = 0
                 JSON_GPS = mp.prepareGPSMessage(GPS_data[GPS_file_line])
                 GPS_file_line += 1
 
@@ -306,7 +307,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, scansPerMet
             client.publish(ig.BATTERY_TOPIC, JSON_battery)
             lastBatteryCheck = pendulum.parse(mp.prepareTimestamp())
         
-        if byte_count == size - 131072:  # when end of file is reached - 131072 is 128K file header size
+        if byte_count == size - 131072:  # when end of file is reached - 131072 is the size of the 128K file header
 
             byte_count = 0
             data_file.close()

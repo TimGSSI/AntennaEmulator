@@ -1,6 +1,6 @@
 import messagePreparation as mp
 import initializeGlobals as ig
-import backupCursor as bc
+#import backupCursor as bc
 import outputData as od
 import processMessage as pm
 
@@ -30,13 +30,15 @@ def main(argv):
 
     #broker="10.0.0.140" # home pc
     broker="10.40.11.7" # work PC
+    #broker="localhost"
     #broker="10.40.11.184" # gssitest2
     #broker="10.40.11.138" # gssitest3    
-    #broker="10.40.11.161" # gssitest6
+    #broker="10.40.11.184" # gssitest6
 
     client = mqtt.Client("antenna_client") # create new instance
     client.on_connect=on_connect # bind call back functions
     client.on_message=on_message
+    client.will_set("stack/clientstatus", "LOST_CONNECTION", 0, False)
     print("Connecting to broker...", broker)    
 
     lastBatteryCheck = pendulum.parse(mp.prepareTimestamp())
@@ -219,6 +221,8 @@ def main(argv):
         if GPS_time > ig.FIFTH_OF_SEC and ig.GPS_TELEM_ENABLED == True:            
         
             if ig.useNemaTalker == False:
+                if GPS_file_line == len(GPS_data):
+                    GPS_file_line = 0
                 JSON_GPS = mp.prepareGPSMessage(GPS_data[GPS_file_line])
                 GPS_file_line += 1
             else:

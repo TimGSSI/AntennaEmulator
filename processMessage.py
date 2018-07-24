@@ -1,7 +1,7 @@
 import paho.mqtt.client as mqtt
 import messagePreparation as mp
 import initializeGlobals as ig
-import backupCursor as bc
+#import backupCursor as bc
 import outputData as od
 import pendulum
 import time
@@ -121,15 +121,23 @@ def processMessage(msg, client):
         latest_message = str(msg.payload)
         split_message = latest_message.split(',')
 
-        ticksPerMeter = split_message[4]
+        orig_scansPerMeter = split_message[4]
+        spm = re.findall('\d+', orig_scansPerMeter)
+        scansPerMeter = int(spm[0])
+        if scansPerMeter == 0:
+            spm = re.findall("\d+\.\d+", orig_scansPerMeter)
+            scansPerMeter = float(spm[0])
+            
+
+        ticksPerMeter = split_message[5]
         ticksPerMeter = re.findall('\d+', ticksPerMeter)
         ticksPerMeter = int(ticksPerMeter[0])
 
-        scansPerMeter = split_message[5]
-        scansPerMeter = re.findall('\d+', scansPerMeter)
-        scansPerMeter = int(scansPerMeter[0])
+        binSize =  ticksPerMeter / scansPerMeter
 
-        binSize = scansPerMeter / ticksPerMeter
+        print("scansPerMeter: " + str(scansPerMeter))
+        print("ticksPerMeter: " + str(ticksPerMeter))
+        print("binSize: " + str(binSize))
 
         values = {'msg':'config_dmi'}
         values['ticksPerMeter'] = ticksPerMeter
@@ -173,7 +181,6 @@ def processMessage(msg, client):
         tx_rate = int(tx_rate[0])
 
         scanRate = split_message[12]
-        print("SCANRATE: " + str(scanRate))
         scanRate = re.findall('\d+', scanRate)
         scanRate = int(scanRate[0])
 

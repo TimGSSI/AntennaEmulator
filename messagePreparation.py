@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+from datetime import datetime
+from datetime import timezone
 import sys
 
 def prepareTimestamp():
@@ -38,8 +39,7 @@ def prepareBatteryMessage(capacity, battery_time):
 
     return battMessage
 
-def prepareGPRSurveyMessage(scan_number, encoded_data):
-#def prepareGPRSurveyMessage(scan_number, encoded_data, distanceM):
+def prepareGPRSurveyMessage(scan_number, encoded_data, distance):
 
     timestamp = prepareTimestamp()
 
@@ -55,19 +55,18 @@ def prepareGPRSurveyMessage(scan_number, encoded_data):
   "dmi/0": {
     "timestamp": "%s",
     "binNumber": %s,
-    "distanceM": 0
+    "distanceM": %s
   },
   "gpr/chan/0": {
     "timestamp": "%s",
     "scan_number": %s,
     "data": "%s"
   }
-}""" % (timestamp, timestamp, scan_number, timestamp, scan_number, string_encoded_data)
-#}""" % (timestamp, timestamp, scan_number, distanceM, timestamp, scan_number, string_encoded_data)
+}""" % (timestamp, timestamp, scan_number, distance, timestamp, scan_number, string_encoded_data)
 
     return GPRMessage
 
-def prepareGPRCombinedMessage(scan_number, rawTickCount, encoded_data):
+def prepareGPRCombinedMessage(scan_number, rawTickCount, encoded_data, distance):
 
     timestamp = prepareTimestamp()
     
@@ -79,14 +78,14 @@ def prepareGPRCombinedMessage(scan_number, rawTickCount, encoded_data):
   "dmi/0": {
     "timestamp": "%s",
     "tickNumber": %s,
-    "distanceM": 0
+    "distanceM": %s
   },
   "gpr/chan/0": {
     "timestamp": "%s",
     "scan_number": %s,
     "data": "%s"
   }
-}""" % (timestamp, timestamp, rawTickCount, timestamp, scan_number, string_encoded_data)
+}""" % (timestamp, timestamp, rawTickCount, distance, timestamp, scan_number, string_encoded_data)
 
     return GPRMessage
 
