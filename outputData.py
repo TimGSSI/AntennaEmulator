@@ -39,6 +39,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
     files_dir = "./test_data/"
     file = str(samples_per_scan) + "_samples.DZT"
     full_path = files_dir + file
+    #print("FULL PATH: " + full_path)
 
     size = os.path.getsize(files_dir + file)
     data_file = open(files_dir + file, 'rb')
@@ -80,12 +81,14 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
     scanMessagesSent = 0
     totalTickCount = 0
     lastTickCount = 0
-    rawTickCount = 0
+    #rawTickCount = 0
 
     nextBackup = 300
 
     tick_high_end = int(binSize * 0.90) 
     tick_low_end = int(binSize * 0.40)
+    print("tick_low_end: " + str(tick_low_end))
+    print("tick_high_end: " + str(tick_high_end))
 
     tickRange = [tick_low_end, tick_high_end]
     forwards = True
@@ -166,6 +169,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                     totalTickCount += newTick
 
                     distance = totalTickCount / ticksPerMeter
+                    #print("distance: " + str(distance))
 
                     fcurrentBinNumber = totalTickCount / ticksPerScan
                     #print("fcurrentBinNumber: " + str(fcurrentBinNumber)) 
@@ -180,8 +184,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                         #print("currentBinNumber---------------->: " + str(currentBinNumber))
                         if currentBinNumber % 50 == 0 and currentBinNumber != 0:
                             print("currentBinNumber: " + str(currentBinNumber))
-
-                        scan_count+=1
+                        
                         data_chunk = data_file.read(samples_per_scan * 4) # unpacks binary data to read as 4-byte int
                         data_chunk_size = samples_per_scan * 4
             
@@ -194,8 +197,10 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                         encoded_data = encoded_data.decode("utf-8")
                     
                         JSON_GPR = mp.prepareGPRSurveyMessage(scan_count, encoded_data, distance)
-                        print(JSON_GPR)
+                        #print(JSON_GPR)
                         client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
+                        scan_count+=1
+
                         
                     elif currentBinNumber <= newBinNumber and forwards == False:
                         if currentBinNumber < lastBinNumber:
@@ -230,13 +235,19 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
 
             if mode == "freerunsw":
                 if (time_time() - start) > period:
+
+                    start += period
                     newTick = surveyWheelTickSimulator(tickRange, forwards)
                     #print(newTick)
-                    rawTickCount += newTick
+
+                    totalTickCount += newTick
+                    #print("totalTickCount: " + str(totalTickCount))
+
+                    distance = totalTickCount / ticksPerMeter
+                    #print("distance: " + str(distance))
+               
                     data_chunk = data_file.read(samples_per_scan * 4) # unpacks binary data to read as 4-byte int
                     data_chunk_size = samples_per_scan * 4
-
-                    distance = rawTickCount / ticksPerMeter
             
                     data = [data_chunk[0], data_chunk[1], data_chunk[2], data_chunk[3]]
                     data = struct.unpack("I", bytearray(data))
@@ -246,15 +257,14 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                     encoded_data = base64.b64encode(data_chunk)
                     encoded_data = encoded_data.decode("utf-8")
 
-                    JSON_GPR = mp.prepareGPRCombinedMessage(scan_count, rawTickCount, encoded_data, distance)
-                    print(JSON_GPR)
+                    JSON_GPR = mp.prepareGPRCombinedMessage(scan_count, totalTickCount, encoded_data, distance)
+                    #print(JSON_GPR)
                     client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
-                    start += period
+                    #start += period
                     scan_count+=1
 
                     if scan_count % 50 == 0 and scan_count != 0:
-                        print("scan_count: " + str(scan_count) + "  rawTickCount: " + str(rawTickCount))
-
+                        print("scan_count: " + str(scan_count) + "  totalTickCount: " + str(totalTickCount))
 
             elif mode == "freerun":
                 #print("scanRate: " + str(scanRate))
@@ -271,7 +281,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                     encoded_data = encoded_data.decode("utf-8")
 
                     JSON_GPR = mp.prepareGPRFreerunMessage(scan_count, encoded_data)
-                    print(JSON_GPR)
+                    #print(JSON_GPR)
                     client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
                     start += period
                     scan_count+=1

@@ -8,6 +8,13 @@ def prepareTimestamp():
     currentTime = datetime.now(timezone.utc).astimezone().isoformat()
     currentTime = currentTime[:-9] + "Z"
 
+    #print("length of current timestamp: " + str(len(currentTime)))
+    #print("timestamp: " + currentTime)
+    if len(currentTime) < 24:
+        print("TIMESTAMP FORMAT PROBLEM: " + str(currentTime))
+        currentTime = "2018-04-03T19:12:14.505Z"
+        #sys.exit()
+
     return currentTime
 
 def prepareGPSMessage(NMEA):
@@ -42,10 +49,6 @@ def prepareBatteryMessage(capacity, battery_time):
 def prepareGPRSurveyMessage(scan_number, encoded_data, distance):
 
     timestamp = prepareTimestamp()
-
-    if len(timestamp) < 24:
-        print("CRASH - TIMESTAMP FORMAT PROBLEM: " + str(timestamp))
-        sys.exit()
     
     string_encoded_data = str(encoded_data)
 

@@ -29,8 +29,8 @@ def main(argv):
     ig.initialize_globals(test_topics, nemaTalker)
 
     #broker="10.0.0.140" # home pc
-    broker="10.40.11.7" # work PC
-    #broker="localhost"
+    #broker="10.40.11.7" # work PC
+    broker="localhost"
     #broker="10.40.11.184" # gssitest2
     #broker="10.40.11.138" # gssitest3    
     #broker="10.40.11.184" # gssitest6
@@ -83,7 +83,7 @@ def main(argv):
 
     while True:
 
-        #print("WE GET BACK")
+        #print("WE GOT BACK")
         """print("mode: " + str(mode))
         print("config_gpr_message_recieved: " +  str(config_gpr_message_recieved))
         print("control_gpr_message_recieved: " + str(control_gpr_message_recieved))
