@@ -1,8 +1,8 @@
 import paho.mqtt.client as mqtt
 import messagePreparation as mp
 import initializeGlobals as ig
-#import backupCursor as bc
 import outputData as od
+
 import pendulum
 import time
 import sys
@@ -10,77 +10,68 @@ import re
 import base64
 import os
 import struct
+import jsonschema
+import json
 from queue import Queue
 
 def processMessage(msg, client):
 
     if msg.topic == ig.CONTROL_GPR_STATE_TOPIC:
 
-        latest_message = str(msg.payload)
-        split_message = latest_message.split(',')
+        json_msg = json.loads(msg.payload)  
 
-        if len(split_message) == 2:
-            state = split_message[0]
-        elif len(split_message) == 4:
-            state = split_message[2]
-
-        print("STATE: " + str(state))
-
-        if "idle" in state:
-            send_data = False
-        else:
+        if json_msg["newState"] == "run":
             send_data = True
+        else:
+            send_data = False    
 
         response_msg = msg.payload.decode("utf-8")
         client.publish(ig.CONTROL_GPR_STATE_RESPONSE, response_msg)
 
         values = {'msg':'control_GPR_msg'}
-        values['send_data'] = send_data        
+        values['send_data'] = send_data
 
         return values
 
     if msg.topic == ig.CONTROL_DMI_TOPIC:
 
-        latest_message = str(msg.payload)
-        split_message = latest_message.split(',')
-        state = split_message[3]
+        json_msg = json.loads(msg.payload)
 
-        if "idle" in state:
-            enable_DMI = False
+        if json_msg["newState"] == "run":
+            enableDMI = True
         else:
-            enable_DMI = True
+            enableDMI = False
 
         response_msg = msg.payload.decode("utf-8")
         client.publish(ig.CONTROL_DMI_STATE_RESPONSE, response_msg)
 
         values = {'msg':'control_DMI_msg'}
-        values['enable_DMI'] = enable_DMI        
+        values['enable_DMI'] = enableDMI        
 
         return values
 
     if msg.topic == ig.CONTROL_BATTERY_STATE:
 
-        latest_message = str(msg.payload)
-        split_message = latest_message.split(',')
-        state = split_message[0]
+        json_msg = json.loads(msg.payload)
 
-        if "idle" in state:
-            ig.BATTERY_TELEM_ENABLED = False
-        else:
+        if json_msg["newState"] == "run":
             ig.BATTERY_TELEM_ENABLED = True
+        else:
+            ig.BATTERY_TELEM_ENABLED = False
 
         response_msg = msg.payload.decode("utf-8")
         client.publish(ig.CONTROL_BATTERY_STATE_RESPONSE, response_msg)
+        
         values = {'msg':'control_battery_msg'}
+        # this does nothing right now because this message does not exist yet
 
         return values
 
     if msg.topic == ig.CONFIG_GPS_TOPIC:
 
-        latest_message = str(msg.payload)
-        split_message = latest_message.split(',')
+        # this message is not sent to me yet
 
-        # check documentation to implement this
+        json_msg = json.loads(msg.payload)  
 
         response_msg = msg.payload.decode("utf-8")
         client.publish(ig.CONFIG_GPS_RESPONSE, response_msg)
@@ -90,14 +81,12 @@ def processMessage(msg, client):
 
     if msg.topic == ig.CONTROL_GPS_TOPIC:
 
-        latest_message = str(msg.payload)
-        split_message = latest_message.split(',')
-        state = split_message[2]
+        json_msg = json.loads(msg.payload)  
 
-        if "idle" in state:
-            ig.GPS_TELEM_ENABLED = False
-        else:
+        if json_msg["newState"] == "run":
             ig.GPS_TELEM_ENABLED = True
+        else:
+            ig.GPS_TELEM_ENABLED = False
 
         response_msg = msg.payload.decode("utf-8")
 
@@ -118,30 +107,13 @@ def processMessage(msg, client):
 
     if msg.topic == ig.CONFIG_DMI_TOPIC:
 
-        latest_message = str(msg.payload)
-        split_message = latest_message.split(',')
+        json_msg = json.loads(msg.payload)
 
-        orig_scansPerMeter = split_message[4]
-        spm = re.findall('\d+', orig_scansPerMeter)
-        scansPerMeter = int(spm[0])
-        if scansPerMeter == 0:
-            spm = re.findall("\d+\.\d+", orig_scansPerMeter)
-            scansPerMeter = float(spm[0])
-            
-
-        ticksPerMeter = split_message[5]
-        ticksPerMeter = re.findall('\d+', ticksPerMeter)
-        ticksPerMeter = int(ticksPerMeter[0])
-
-        binSize =  ticksPerMeter / scansPerMeter
-
-        print("scansPerMeter: " + str(scansPerMeter))
-        print("ticksPerMeter: " + str(ticksPerMeter))
-        print("binSize: " + str(binSize))
+        binSize =  json_msg["ticksPerMeter"] / json_msg["scansPerMeter"]
 
         values = {'msg':'config_dmi'}
-        values['ticksPerMeter'] = ticksPerMeter
-        values['scansPerMeter'] = scansPerMeter
+        values['ticksPerMeter'] = json_msg["ticksPerMeter"]
+        values['scansPerMeter'] = json_msg["scansPerMeter"]
         values['binSize'] = binSize
 
         response_msg = msg.payload.decode("utf-8")
@@ -169,38 +141,73 @@ def processMessage(msg, client):
                 
     if msg.topic == ig.CONFIG_GPR_TOPIC:
                 
-        latest_message = str(msg.payload)
-        split_message = latest_message.split(',')
-                
-        samples_per_scan = split_message[8]
-        samples_per_scan = re.findall('\d+', samples_per_scan)
-        samples_per_scan = int(samples_per_scan[0])
-
-        tx_rate = split_message[9]
-        tx_rate = re.findall('\d+', tx_rate)
-        tx_rate = int(tx_rate[0])
-
-        scanRate = split_message[12]
-        scanRate = re.findall('\d+', scanRate)
-        scanRate = int(scanRate[0])
-
-        mode = split_message[13]
-        if mode.find("swtick") != -1:
-            mode = "swtick"
-        elif mode.find("freerunsw") != -1:
-            mode = "freerunsw"
-        elif mode.find("freerun") != -1:
-            mode = "freerun"
-        elif mode.find("single") != -1:
-            mode = "single"
-        else:
-            mode = "freerun"
+        json_msg = json.loads(msg.payload)
 
         values = {'msg':'config_gpr'}
-        values['samples_per_scan'] = samples_per_scan
-        values['tx_rate'] = tx_rate
-        values['scanRate'] = scanRate
-        values['mode'] = mode
+        values['samples_per_scan'] = json_msg["samples"]
+        values['tx_rate'] = json_msg["txRateKHz"]
+        values['scanRate'] = json_msg["scanRateHz"]
+        values['mode'] = json_msg["scanControl"]
+        values['numberOfChannels'] = len(json_msg['channels'])
+
+        antenna1 = {}
+        antenna2 = {}
+        antenna3 = {}
+        antenna4 = {}
+
+        if len(json_msg['channels']) == 1:            
+            antenna1['enable'] = json_msg['channels'][0]['enable']
+            antenna1['positionOffsetPs'] = json_msg['channels'][0]['positionOffsetPs']
+            antenna1['timeRangeNs'] = json_msg['channels'][0]['timeRangeNs']
+            values['antenna1'] = antenna1
+
+        elif len(json_msg['channels']) == 2:
+            antenna1['enable'] = json_msg['channels'][0]['enable']
+            antenna1['positionOffsetPs'] = json_msg['channels'][0]['positionOffsetPs']
+            antenna1['timeRangeNs'] = json_msg['channels'][0]['timeRangeNs']
+            values['antenna1'] = antenna1
+
+            antenna2['enable'] = json_msg['channels'][1]['enable']
+            antenna2['positionOffsetPs'] = json_msg['channels'][1]['positionOffsetPs']
+            antenna2['timeRangeNs'] = json_msg['channels'][1]['timeRangeNs']
+            values['antenna2'] = antenna1
+
+        elif len(json_msg['channels']) == 3:
+            antenna1['enable'] = json_msg['channels'][0]['enable']
+            antenna1['positionOffsetPs'] = json_msg['channels'][0]['positionOffsetPs']
+            antenna1['timeRangeNs'] = json_msg['channels'][0]['timeRangeNs']
+            values['antenna1'] = antenna1
+
+            antenna2['enable'] = json_msg['channels'][1]['enable']
+            antenna2['positionOffsetPs'] = json_msg['channels'][1]['positionOffsetPs']
+            antenna2['timeRangeNs'] = json_msg['channels'][1]['timeRangeNs']
+            values['antenna2'] = antenna1
+
+            antenna3['enable'] = json_msg['channels'][2]['enable']
+            antenna3['positionOffsetPs'] = json_msg['channels'][2]['positionOffsetPs']
+            antenna3['timeRangeNs'] = json_msg['channels'][2]['timeRangeNs']
+            values['antenna3'] = antenna1
+        
+        elif len(json_msg['channels']) == 4:
+            antenna1['enable'] = json_msg['channels'][0]['enable']
+            antenna1['positionOffsetPs'] = json_msg['channels'][0]['positionOffsetPs']
+            antenna1['timeRangeNs'] = json_msg['channels'][0]['timeRangeNs']
+            values['antenna1'] = antenna1
+
+            antenna2['enable'] = json_msg['channels'][1]['enable']
+            antenna2['positionOffsetPs'] = json_msg['channels'][1]['positionOffsetPs']
+            antenna2['timeRangeNs'] = json_msg['channels'][1]['timeRangeNs']
+            values['antenna2'] = antenna1
+
+            antenna3['enable'] = json_msg['channels'][2]['enable']
+            antenna3['positionOffsetPs'] = json_msg['channels'][2]['positionOffsetPs']
+            antenna3['timeRangeNs'] = json_msg['channels'][2]['timeRangeNs']
+            values['antenna3'] = antenna1
+
+            antenna4['enable'] = json_msg['channels'][3]['enable']
+            antenna4['positionOffsetPs'] = json_msg['channels'][3]['positionOffsetPs']
+            antenna4['timeRangeNs'] = json_msg['channels'][3]['timeRangeNs']
+            values['antenna4'] = antenna1
 
         response_msg = msg.payload.decode("utf-8")
         client.publish(ig.CONFIG_GPR_RESPONSE, response_msg)

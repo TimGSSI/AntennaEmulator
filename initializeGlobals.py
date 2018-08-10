@@ -1,11 +1,13 @@
 import pendulum
 from queue import Queue
 
-def initialize_globals(test_topics, nemaTalker):
+def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
 
     global q
 
     global useNemaTalker
+    global INCOMING_SCHEMA_VALIDATION
+    global OUTGOING_SCHEMA_VALIDATION
 
     global GPS_NMEA_TOPIC
     global BATTERY_TOPIC
@@ -43,6 +45,12 @@ def initialize_globals(test_topics, nemaTalker):
     
     global BATTERY_TELEM_ENABLED
     global GPS_TELEM_ENABLED
+
+    if incoming == True:
+        INCOMING_SCHEMA_VALIDATION = True
+
+    if outgoing == True:
+        OUTGOING_SCHEMA_VALIDATION = True
 
     if test_topics == True:
         GPS_NMEA_TOPIC = "test/telem/gps/nmea"

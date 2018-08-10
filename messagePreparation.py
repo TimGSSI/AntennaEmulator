@@ -5,15 +5,11 @@ import sys
 def prepareTimestamp():
 
     # UTC 8601 datetime template: 2018-04-03T19:12:14.505Z
-    currentTime = datetime.now(timezone.utc).astimezone().isoformat()
-    currentTime = currentTime[:-9] + "Z"
+    unparsed_time = datetime.now(timezone.utc).astimezone().isoformat()
+    currentTime = unparsed_time[:-9] + "Z"
 
-    #print("length of current timestamp: " + str(len(currentTime)))
-    #print("timestamp: " + currentTime)
     if len(currentTime) < 24:
-        print("TIMESTAMP FORMAT PROBLEM: " + str(currentTime))
-        currentTime = "2018-04-03T19:12:14.505Z"
-        #sys.exit()
+        currentTime = unparsed_time[:-6] + ".000Z"
 
     return currentTime
 

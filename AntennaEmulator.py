@@ -10,6 +10,7 @@ import pendulum
 import socket
 import time
 import sys
+import os
 
 def on_connect(client, userdata, flags, rc):
     if rc==0:
@@ -23,12 +24,14 @@ def on_message(client, userdata, message):
 
 def main(argv):
 
+    # Set global debug options
     test_topics = True
     nemaTalker = False
+    incoming_schema_validation = False
+    outgoing_schema_validation = False
 
-    ig.initialize_globals(test_topics, nemaTalker)
+    ig.initialize_globals(test_topics, nemaTalker, incoming_schema_validation, outgoing_schema_validation)
 
-    #broker="10.0.0.140" # home pc
     #broker="10.40.11.7" # work PC
     broker="localhost"
     #broker="10.40.11.184" # gssitest2
@@ -56,6 +59,10 @@ def main(argv):
     client.subscribe(ig.CONTROL_BATTERY_STATE)      #"control/battery/state"
     client.subscribe(ig.CONTROL_DMI_TOPIC)          #"control/dmi/state"
 
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath)
+    os.chdir(dname)
+
     if ig.useNemaTalker == False:
         GPS_filename = "FILE__001.DZG"
         with open(GPS_filename) as f:
@@ -77,18 +84,9 @@ def main(argv):
     ticksPerMeter = 1
     scansPerMeter = 1
     samples_per_scan = 0
-    #reset = {'samples_per_scan':samples_per_scan}
-    #reset['mode'] = ""
     reset = 0
 
     while True:
-
-        #print("WE GOT BACK")
-        """print("mode: " + str(mode))
-        print("config_gpr_message_recieved: " +  str(config_gpr_message_recieved))
-        print("control_gpr_message_recieved: " + str(control_gpr_message_recieved))
-        print("dmi_message_recieved: " + str(dmi_message_recieved))
-        print("=============================")"""
 
         currentTime = pendulum.parse(mp.prepareTimestamp())
         batt_time = currentTime - lastBatteryCheck
@@ -228,7 +226,6 @@ def main(argv):
             else:
                 GPS, addr = soc.recvfrom(128)
                 GPS = GPS.decode("utf-8").strip()
-
                 JSON_GPS = mp.prepareGPSMessage(GPS)
 
             client.publish(ig.GPS_NMEA_TOPIC, JSON_GPS)
