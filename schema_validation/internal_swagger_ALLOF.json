@@ -1,0 +1,560 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "0.0.0",
+    "title": "GSSI Low Frequency Platform API",
+    "description": "\nControl a GSSI Smart Sensor Node Device.\nFind source code of this API [here](https://github.com/GeophysicalSurvey/gssi-low-freq-platform)\n"
+  },
+  "paths": {
+    "/config/debug": {
+      "put": {
+        "parameters": [
+          {
+            "name": "config",
+            "in": "body",
+            "description": "post configuration document to be merged",
+            "schema": {
+              "$ref": "#/components/schemas/ConfigDebug"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updates the device configuration"
+          }
+        }
+      }
+    },
+    "/config/device": {
+      "put": {
+        "parameters": [
+          {
+            "name": "config",
+            "in": "body",
+            "description": "post configuration document to be merged",
+            "schema": {
+              "$ref": "#/components/schemas/ConfigDevice"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updates the device configuration"
+          }
+        }
+      }
+    },
+    "/config/dmi/[0|1]": {
+      "put": {
+        "parameters": [
+          {
+            "name": "config",
+            "in": "body",
+            "description": "post configuration document to be merged",
+            "schema": {
+              "$ref": "#/components/schemas/ConfigDmi"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updates the radar scan driver configuration"
+          }
+        }
+      }
+    },
+    "/config/dmi/0/output/formatted": {
+      "put": {
+        "parameters": [
+          {
+            "name": "config",
+            "in": "body",
+            "description": "post configuration document to be merged",
+            "schema": {
+              "$ref": "#/components/schemas/ConfigDmiOutputFormatted"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updates the radar scan driver configuration"
+          }
+        }
+      }
+    },
+    "/config/gpr": {
+      "put": {
+        "parameters": [
+          {
+            "name": "config",
+            "in": "body",
+            "description": "post configuration document to be merged",
+            "schema": {
+              "$ref": "#/components/schemas/ConfigGpr"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updates the radar scan driver configuration"
+          }
+        }
+      }
+    },
+    "/config/gps": {
+      "put": {
+        "parameters": [
+          {
+            "name": "config",
+            "in": "body",
+            "description": "post configuration document to be merged",
+            "schema": {
+              "$ref": "#/components/schemas/ConfigGps"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updates the radar scan driver configuration"
+          }
+        }
+      }
+    },
+    "/config/gpr/chan/0/stack": {
+      "put": {
+        "parameters": [
+          {
+            "name": "config",
+            "in": "body",
+            "description": "post configuration document to be merged",
+            "schema": {
+              "$ref": "#/components/schemas/ConfigGprChanStack"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updates the radar scan driver configuration"
+          }
+        }
+      }
+    },
+    "/config/rts/0": {
+      "put": {
+        "parameters": [
+          {
+            "name": "config",
+            "in": "body",
+            "description": "post configuration document to be merged",
+            "schema": {
+              "$ref": "#/components/schemas/ConfigRts"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updates the radar scan driver configuration"
+          }
+        }
+      }
+    },
+    "/control/gpr/state": {
+      "put": {
+        "parameters": [
+          {
+            "name": "control",
+            "in": "body",
+            "description": "post control document to be merged",
+            "schema": {
+              "$ref": "#/components/schemas/ControlGpr"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updates the radar control"
+          }
+        }
+      }
+    },
+    "/control/battery/state": {
+      "put": {
+        "parameters": [
+          {
+            "name": "control",
+            "in": "body",
+            "description": "post control document to be merged",
+            "schema": {
+              "$ref": "#/components/schemas/ControlBattery"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updates the radar control"
+          }
+        }
+      }
+    },
+    "/control/gps/state": {
+      "put": {
+        "parameters": [
+          {
+            "name": "control",
+            "in": "body",
+            "description": "post control document to be merged",
+            "schema": {
+              "$ref": "#/components/schemas/ControlGps"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updates the radar control"
+          }
+        }
+      }
+    },
+    "/control/dmi/state": {
+      "put": {
+        "parameters": [
+          {
+            "name": "control",
+            "in": "body",
+            "description": "post control document to be merged",
+            "schema": {
+              "$ref": "#/components/schemas/ControlDmi"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updates the radar control"
+          }
+        }
+      }
+    },
+    "/control/gpr/chan/0/stack": {
+      "put": {
+        "parameters": [
+          {
+            "name": "control",
+            "in": "body",
+            "description": "post control document to be merged",
+            "schema": {
+              "$ref": "#/components/schemas/ControlGprChanStack"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updates the radar control"
+          }
+        }
+      }
+    },
+    "/control/rts/0": {
+      "put": {
+        "parameters": [
+          {
+            "name": "control",
+            "in": "body",
+            "description": "post control document to be merged",
+            "schema": {
+              "$ref": "#/components/schemas/ControlRts"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updates the radar control control"
+          }
+        }
+      }
+    },
+    "/status/gpr/chan/0/stack": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Data Available",
+        "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusGprChanStack"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status/marker": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Data Available",
+        "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusMarker"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status/debug": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Data Available",
+        "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusDebug"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/telem/battery": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Data Available",
+        "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelemBattery"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/telem/dmi/[0|1]": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Data Available",
+        "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelemDmi"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/telem/dmi/[0|1]/raw": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Data Available",
+        "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelemDmiRaw"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/telem/dmi/profile": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Data Available",
+        "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelemDmiProfile"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/telem/gpr": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Data Available",
+        "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelemGpr"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/telem/gpr/chan/0": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Data Available",
+        "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelemGprChan"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/telem/gpr/chan/0/stack": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Data Available",
+        "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelemGprChanStack"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/telem/gps/nmea": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Data Available",
+        "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelemGpsNmea"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/telem/lt": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Data Available",
+        "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelemLt"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/telem/lt/raw": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Data Available",
+        "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelemLtRaw"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/telem/rts/0": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Data Available",
+        "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelemRts"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ConfigDebug": {"allOf": [{ "$ref": "../src/schema/config/ConfigDebug.json"}, { "$ref": "../src/schema/config/Config.json"}]},
+      "ConfigDevice": {"allOf": [{ "$ref": "../src/schema/config/ConfigDevice.json"}, { "$ref": "../src/schema/config/Config.json"}]},
+      "ConfigDmi": {"allOf": [{ "$ref": "../src/schema/config/ConfigDmi.json"}, { "$ref": "../src/schema/config/Config.json"}]},
+      "ConfigDmiOutputFormatted": {"allOf": [{ "$ref": "../src/schema/config/ConfigDmiOutputFormatted.json"}, { "$ref": "../src/schema/config/Config.json"}]},
+      "ConfigGpr": {"allOf": [{ "$ref": "../src/schema/config/ConfigGpr.json"}, { "$ref": "../src/schema/config/Config.json"}]},
+      "ConfigGps": {"allOf": [{ "$ref": "../src/schema/config/ConfigGps.json"}, { "$ref": "../src/schema/config/Config.json"}]},
+      "ConfigGprChanStack": {"allOf": [{ "$ref": "../src/schema/config/ConfigGprChanStack.json"}, { "$ref": "../src/schema/config/Config.json"}]},
+      "ConfigRts": {"allOf": [{ "$ref": "../src/schema/config/ConfigRts.json"}, { "$ref": "../src/schema/config/Config.json"}]},
+      "ControlGpr": {"allOf": [{ "$ref": "../src/schema/control/ControlGpr.json" },  { "$ref": "../src/schema/config/Config.json"}]},
+      "ControlGps": {"allOf": [{ "$ref": "../src/schema/control/ControlGps.json" },  { "$ref": "../src/schema/config/Config.json"}]},
+      "ControlDmi": {"allOf": [{ "$ref": "../src/schema/control/ControlDmi.json" },  { "$ref": "../src/schema/config/Config.json"}]},
+      "ControlBattery": {"allOf": [{ "$ref": "../src/schema/control/ControlBattery.json" },  { "$ref": "../src/schema/config/Config.json"}]},
+      "ControlGprChanStack": { "$ref": "../src/schema/control/ControlGprChanStack.json" },
+      "ControlRts": { "$ref": "../src/schema/control/ControlRts.json" },
+      "StatusGprChanStack": { "$ref": "../src/schema/status/StatusGprChanStack.json" },
+      "StatusDebug": { "$ref": "../src/schema/status/StatusDebug.json" },
+      "StatusMarker": { "$ref": "../src/schema/status/StatusMarker.json" },
+      "TelemBattery": { "$ref": "../src/schema/telem/TelemBattery.json" },
+      "TelemDmi": { "$ref": "../src/schema/telem/TelemDmi.json" },
+      "TelemDmiProfile": { "$ref": "../src/schema/telem/TelemDmiProfile.json" },
+      "TelemDmiRaw": { "$ref": "../src/schema/telem/TelemDmiRaw.json" },
+      "TelemGpr": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dmi/0": {
+            "$ref": "#/components/schemas/TelemDmi"
+          },
+          "gpr/chan/0": {
+            "$ref": "#/components/schemas/TelemRts"
+          }
+        }
+      },
+      "TelemGprChan": { "$ref": "#/components/schemas/TelemRts" },
+      "TelemGprChanStack": { "$ref": "#/components/schemas/TelemRts" },
+      "TelemGpsNmea": { "$ref": "../src/schema/telem/TelemGpsNmea.json" },
+      "TelemLt": { "$ref": "../src/schema/telem/TelemLt.json" },
+      "TelemLtRaw": { "$ref": "../src/schema/telem/TelemLtRaw.json" },
+      "TelemRts": { "$ref": "../src/schema/telem/TelemRts.json" }
+    }
+  }
+}

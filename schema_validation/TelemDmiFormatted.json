@@ -1,0 +1,28 @@
+{
+  "title": "TelemDmiFormatted",
+  "description": "distance measurement instrument position output",
+  "type": "object",
+  "required": [
+    "timestamp",
+    "binNumber",
+    "distanceM"
+  ],
+  "properties": {
+    "timestamp": {
+      "title": "Timestamp",
+      "description": "built-in ISO 8601 date-time format",
+      "type": "string",
+      "format": "date-time"
+    },
+    "binNumber": {
+      "title": "DMI Bin Number",
+      "description": "dmi bin number",
+      "type": "integer"
+    },
+    "distanceM": {
+      "title": "DMI Distance in meters",
+      "description": "distance in meters",
+      "type": "number"
+    }
+  }
+}

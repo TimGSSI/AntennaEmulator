@@ -1,0 +1,27 @@
+{
+  "title": "ConfigDmi",
+  "type": "object",
+  "properties": {
+    "scansPerMeter": {
+      "description": "scans per meter",
+      "type": "number",
+      "minimum": 0.0,
+      "default": 100.0
+    },
+    "ticksPerMeter": {
+      "description": "ticks per meter",
+      "type": "number",
+      "minimum": 0.0,
+      "default": 407.44
+    },
+    "timestamp": {
+      "description": "timestamp in iso8601 format, example: 2018-08-01T12:58:40.877Z",
+      "type": "string"
+    },
+    "uuid": {
+      "description": "Unique message id for tracking config lifecycle",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

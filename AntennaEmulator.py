@@ -1,6 +1,5 @@
 import messagePreparation as mp
 import initializeGlobals as ig
-#import backupCursor as bc
 import outputData as od
 import processMessage as pm
 
@@ -25,9 +24,9 @@ def on_message(client, userdata, message):
 def main(argv):
 
     # Set global debug options
-    test_topics = True
+    test_topics = False
     nemaTalker = False
-    incoming_schema_validation = False
+    incoming_schema_validation = True
     outgoing_schema_validation = False
 
     ig.initialize_globals(test_topics, nemaTalker, incoming_schema_validation, outgoing_schema_validation)
@@ -50,10 +49,11 @@ def main(argv):
     client.connect(broker)
     client.loop_start()
 
+    client.subscribe(ig.CONFIG_DEVICE_TOPIC)        #"config/device"
     client.subscribe(ig.CONFIG_GPR_TOPIC)           #"config/gpr"
     client.subscribe(ig.CONTROL_GPS_TOPIC)          #"config/gps"
     client.subscribe(ig.CONFIG_DMI_TOPIC)           #"config/dmi/0"
-    client.subscribe(ig.DMI_OUTPUT_FORMATTED_TOPIC) #"config/dmi/output/formatted"
+    client.subscribe(ig.DMI_OUTPUT_FORMATTED_TOPIC) #"config/dmi/0/output/formatted"
     client.subscribe(ig.CONTROL_GPS_TOPIC)          #"control/gps/state"
     client.subscribe(ig.CONTROL_GPR_STATE_TOPIC)    #"control/gpr/state"
     client.subscribe(ig.CONTROL_BATTERY_STATE)      #"control/battery/state"

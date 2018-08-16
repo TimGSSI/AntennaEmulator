@@ -58,8 +58,8 @@ def prepareGPRSurveyMessage(scan_number, encoded_data, distance):
   },
   "gpr/chan/0": {
     "timestamp": "%s",
-    "scan_number": %s,
-    "data": "%s"
+    "scanNumber": %s,
+    "dataScan": "%s"
   }
 }""" % (timestamp, timestamp, scan_number, distance, timestamp, scan_number, string_encoded_data)
 
@@ -81,8 +81,8 @@ def prepareGPRCombinedMessage(scan_number, rawTickCount, encoded_data, distance)
   },
   "gpr/chan/0": {
     "timestamp": "%s",
-    "scan_number": %s,
-    "data": "%s"
+    "scanNumber": %s,
+    "dataScan": "%s"
   }
 }""" % (timestamp, timestamp, rawTickCount, distance, timestamp, scan_number, string_encoded_data)
 
@@ -98,8 +98,8 @@ def prepareGPRFreerunMessage(scan_number, encoded_data):
 {
   "gpr/chan/0": {
     "timestamp": "%s",
-    "scan_number": %s,
-    "data": "%s"
+    "scanNumber": %s,
+    "dataScan": "%s"
   }
 }""" % (timestamp, scan_number, string_encoded_data)
 
@@ -114,8 +114,8 @@ def prepareGPREOFMessage():
   "timestamp": "%s",
   "gpr/chan/0": {
     "timestamp": "%s",
-    "scan_number": -1,
-    "data": ""
+    "scanNumber": -1,
+    "dataScan": ""
   }
 }""" % (timestamp, timestamp)
 

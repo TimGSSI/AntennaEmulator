@@ -1,0 +1,101 @@
+{
+  "title": "ConfigGpr",
+  "type": "object",
+  "properties": {
+    "channels": {
+      "type": "array",
+      "items": {
+        "title": "ConfigGprChan",
+        "description": "Individual channel configuration",
+        "type": "object",
+        "properties": {
+          "enable": {
+            "description": "Channel state",
+            "type": "boolean",
+            "default": false
+          },
+          "index": {
+            "description": "Channel identification index",
+            "type": "integer",
+            "default": 0,
+            "minimum": 0
+          },
+          "positionOffsetPs": {
+            "description": "position offset in picoseconds",
+            "type": "integer",
+            "default": 0,
+            "minimum": -50000
+          },
+          "timeRangeNs": {
+            "description": "time range in nanoseconds",
+            "type": "integer",
+            "default": 512,
+            "minimum": 2
+          }
+        }
+      },
+      "default" : [ {"index": 0, "positionOffsetPs": 152000, "timeRangeNs": 256 } ]
+    },
+    "channelSync": {
+      "description": "scans sync method - scan triggering mode. Its always set to IMMEDIATE for single antenna system. The TIMESLOT mode is reserved for the multichannel systems.",
+      "type": "string",
+      "enum": ["immediate", "timeslot"]
+    },
+    "enableDeadman": {
+      "description": "survey wheel deadman - this is an optional value to control antenna trigger when available.",
+      "type": "boolean"
+    },
+    "enableDither": {
+      "description": "dither state - this is an optional value to control antenna dithering mode when available.",
+      "type": "boolean"
+    },
+    "rcConfig": {
+      "description": "receiver configuration - transmitter/receiver configuration type; BISTATIC mode is configuring system to use external transmitter",
+      "type": "string",
+      "enum": ["monostatic", "bistatic", "dual"]
+    },
+    "repeats": {
+      "description": "number of repeats - this is an optional value to control internal data stacking - single sample value corresponds to stacking 0. Antenna will validate this number and publish corrected value.",
+      "type": "integer"
+    },
+    "samples": {
+      "title": "samples per scan",
+      "description": "Zero emits the full GPR capability discovery",
+      "type": "integer",
+      "enum": [256, 512, 1024, 2048, 4096, 8192, 16384],
+      "default": 1024,
+      "minimum": 0
+    },
+    "scanControl": {
+      "description": "scans control method - describes data acquisition mode. Currently known modes are: swtick, freerun, single, freerunsw; SWTICK is distance based data collection. Scan are published when the DMI tick counter is reaching value corresponding to next bin number.  Radar data is published together with Formatted DMI data (scan bin number).  FREERUN is time based data collection, no DMI information.  SINGLE is point mode data collection with stacking. No DMI information. This mode may also be used for the antenna calibration purposes (position and amplitude).  FREERUNSW is time based data collection. Radar data is published together with Raw DMI data (dmi tick number).",
+      "type": "string",
+      "enum": ["swtick", "freerun", "single", "freerunsw"]
+    },
+    "scanRateHz": {
+      "title": "scans per second",
+      "description": "Scan rate proposed by UI. Antenna will validate this number and publish corrected value. Minimum value is antenna related (1 scan/second with repeats == 0)",
+      "type": "number",
+      "default": 100,
+      "minimum": 1,
+      "maximum": 10000
+    },
+    "timestamp": {
+      "description": "timestamp in iso8601 format, example: 2018-08-01T12:58:40.877Z",
+      "type": "string"
+    },
+    "txRateKHz": {
+      "title": "Transmit rate in kHz",
+      "description": "Transmit rate proposed by UI. Antenna will validate this number and publish corrected value. The max legal (FCC/CE) txRate will be stored on the antenna",
+      "type": "number",
+      "default": 200.0,
+      "minimum": 100.0,
+      "maximum": 10000.0,
+      "multipleOf": 100.0
+    },
+    "uuid": {
+      "description": "Unique message id for tracking config lifecycle",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

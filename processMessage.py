@@ -10,15 +10,18 @@ import re
 import base64
 import os
 import struct
-import jsonschema
 import json
+import jsonschema
 from queue import Queue
 
 def processMessage(msg, client):
 
     if msg.topic == ig.CONTROL_GPR_STATE_TOPIC:
 
-        json_msg = json.loads(msg.payload)  
+        json_msg = json.loads(msg.payload.decode('utf-8'))
+                
+        if ig.INCOMING_SCHEMA_VALIDATION == True:           
+            jsonschema.validate(json_msg, ig.CONTROL_GPR_SCHEMA)  
 
         if json_msg["newState"] == "run":
             send_data = True
@@ -35,7 +38,10 @@ def processMessage(msg, client):
 
     if msg.topic == ig.CONTROL_DMI_TOPIC:
 
-        json_msg = json.loads(msg.payload)
+        json_msg = json.loads(msg.payload.decode('utf-8'))
+
+        if ig.INCOMING_SCHEMA_VALIDATION == True:           
+            jsonschema.validate(json_msg, ig.CONTROL_DMI_SCHEMA)
 
         if json_msg["newState"] == "run":
             enableDMI = True
@@ -50,9 +56,31 @@ def processMessage(msg, client):
 
         return values
 
+    if msg.topic == ig.CONTROL_GPS_TOPIC:
+
+        json_msg = json.loads(msg.payload.decode('utf-8'))  
+
+        if ig.INCOMING_SCHEMA_VALIDATION == True:           
+            jsonschema.validate(json_msg, ig.CONTROL_GPS_SCHEMA)
+
+        if json_msg["newState"] == "run":
+            ig.GPS_TELEM_ENABLED = True
+        else:
+            ig.GPS_TELEM_ENABLED = False
+
+        response_msg = msg.payload.decode("utf-8")
+
+        client.publish(ig.CONTROL_GPS_STATE_RESPONSE, response_msg)
+        values = {'msg':'control_gps_msg'}
+
+        return values
+
     if msg.topic == ig.CONTROL_BATTERY_STATE:
 
-        json_msg = json.loads(msg.payload)
+        json_msg = json.loads(msg.payload.decode('utf-8'))
+
+        if ig.INCOMING_SCHEMA_VALIDATION == True:           
+            jsonschema.validate(json_msg, ig.CONTROL_BATTERY_SCHEMA)
 
         if json_msg["newState"] == "run":
             ig.BATTERY_TELEM_ENABLED = True
@@ -63,15 +91,18 @@ def processMessage(msg, client):
         client.publish(ig.CONTROL_BATTERY_STATE_RESPONSE, response_msg)
         
         values = {'msg':'control_battery_msg'}
-        # this does nothing right now because this message does not exist yet
+        # this topic does nothing right now because this message does not exist yet
 
         return values
 
     if msg.topic == ig.CONFIG_GPS_TOPIC:
 
-        # this message is not sent to me yet
+        # this message does not get sent to me yet
 
-        json_msg = json.loads(msg.payload)  
+        json_msg = json.loads(msg.payload.decode('utf-8'))  
+
+        if ig.INCOMING_SCHEMA_VALIDATION == True:           
+            jsonschema.validate(json_msg, ig.CONFIG_GPS_SCHEMA)
 
         response_msg = msg.payload.decode("utf-8")
         client.publish(ig.CONFIG_GPS_RESPONSE, response_msg)
@@ -79,35 +110,12 @@ def processMessage(msg, client):
 
         return values
 
-    if msg.topic == ig.CONTROL_GPS_TOPIC:
-
-        json_msg = json.loads(msg.payload)  
-
-        if json_msg["newState"] == "run":
-            ig.GPS_TELEM_ENABLED = True
-        else:
-            ig.GPS_TELEM_ENABLED = False
-
-        response_msg = msg.payload.decode("utf-8")
-
-        """if ig.GPS_TELEM_ENABLED == False:
-            test = str(split_message[0]) + ",\"newState\":\"run\"," + str(split_message[2])
-        else:
-            test = str(split_message[0]) + ",\"newState\":\"idle\"," + str(split_message[2])
-
-        test = test[2:]
-        test = test[:-1]
-
-        client.publish(ig.CONTROL_GPS_STATE_RESPONSE, test)"""
-
-        client.publish(ig.CONTROL_GPS_STATE_RESPONSE, response_msg)
-        values = {'msg':'control_gps_msg'}
-
-        return values
-
     if msg.topic == ig.CONFIG_DMI_TOPIC:
 
-        json_msg = json.loads(msg.payload)
+        json_msg = json.loads(msg.payload.decode('utf-8'))
+
+        if ig.INCOMING_SCHEMA_VALIDATION == True:           
+            jsonschema.validate(json_msg, ig.CONFIG_DMI_SCHEMA)
 
         binSize =  json_msg["ticksPerMeter"] / json_msg["scansPerMeter"]
 
@@ -123,16 +131,13 @@ def processMessage(msg, client):
 
     if msg.topic == ig.DMI_OUTPUT_FORMATTED_TOPIC:
 
-        latest_message = str(msg.payload)
-        split_message = latest_message.split(',')
+        json_msg = json.loads(msg.payload.decode('utf-8'))
 
-        if split_message[1] == True:
-            publish = True
-        else:
-            publish = False
+        if ig.INCOMING_SCHEMA_VALIDATION == True:           
+            jsonschema.validate(json_msg, ig.CONFIG_DMI_OUTPUT_FORMATTED_SCHEMA)
 
         values = {'msg':'config_dmi_0_output_formatted'}
-        values['publish'] = publish
+        values['publish'] = json_msg["publish"]
 
         response_msg = msg.payload.decode("utf-8")
         client.publish(ig.CONFIG_DMI_0__OUTPUT_FORMATTED_RESPONSE, response_msg)
@@ -141,7 +146,11 @@ def processMessage(msg, client):
                 
     if msg.topic == ig.CONFIG_GPR_TOPIC:
                 
-        json_msg = json.loads(msg.payload)
+        json_msg = json.loads(msg.payload.decode('utf-8'))
+
+        if ig.INCOMING_SCHEMA_VALIDATION == True:  
+            jsonschema.validate(json_msg, ig.CONFIG_GPR_SCHEMA)
+            #jsonschema.validate(json_msg, ig.CONFIG_GPS_SCHEMA) # Tests incorrect schema validation file
 
         values = {'msg':'config_gpr'}
         values['samples_per_scan'] = json_msg["samples"]
@@ -150,6 +159,8 @@ def processMessage(msg, client):
         values['mode'] = json_msg["scanControl"]
         values['numberOfChannels'] = len(json_msg['channels'])
 
+        # this section collects configuration values for multiple antennas if there are mor than 1 
+    
         antenna1 = {}
         antenna2 = {}
         antenna3 = {}
@@ -170,7 +181,7 @@ def processMessage(msg, client):
             antenna2['enable'] = json_msg['channels'][1]['enable']
             antenna2['positionOffsetPs'] = json_msg['channels'][1]['positionOffsetPs']
             antenna2['timeRangeNs'] = json_msg['channels'][1]['timeRangeNs']
-            values['antenna2'] = antenna1
+            values['antenna2'] = antenna2
 
         elif len(json_msg['channels']) == 3:
             antenna1['enable'] = json_msg['channels'][0]['enable']
@@ -181,12 +192,12 @@ def processMessage(msg, client):
             antenna2['enable'] = json_msg['channels'][1]['enable']
             antenna2['positionOffsetPs'] = json_msg['channels'][1]['positionOffsetPs']
             antenna2['timeRangeNs'] = json_msg['channels'][1]['timeRangeNs']
-            values['antenna2'] = antenna1
+            values['antenna2'] = antenna2
 
             antenna3['enable'] = json_msg['channels'][2]['enable']
             antenna3['positionOffsetPs'] = json_msg['channels'][2]['positionOffsetPs']
             antenna3['timeRangeNs'] = json_msg['channels'][2]['timeRangeNs']
-            values['antenna3'] = antenna1
+            values['antenna3'] = antenna3
         
         elif len(json_msg['channels']) == 4:
             antenna1['enable'] = json_msg['channels'][0]['enable']
@@ -197,17 +208,17 @@ def processMessage(msg, client):
             antenna2['enable'] = json_msg['channels'][1]['enable']
             antenna2['positionOffsetPs'] = json_msg['channels'][1]['positionOffsetPs']
             antenna2['timeRangeNs'] = json_msg['channels'][1]['timeRangeNs']
-            values['antenna2'] = antenna1
+            values['antenna2'] = antenna2
 
             antenna3['enable'] = json_msg['channels'][2]['enable']
             antenna3['positionOffsetPs'] = json_msg['channels'][2]['positionOffsetPs']
             antenna3['timeRangeNs'] = json_msg['channels'][2]['timeRangeNs']
-            values['antenna3'] = antenna1
+            values['antenna3'] = antenna3
 
             antenna4['enable'] = json_msg['channels'][3]['enable']
             antenna4['positionOffsetPs'] = json_msg['channels'][3]['positionOffsetPs']
             antenna4['timeRangeNs'] = json_msg['channels'][3]['timeRangeNs']
-            values['antenna4'] = antenna1
+            values['antenna4'] = antenna4
 
         response_msg = msg.payload.decode("utf-8")
         client.publish(ig.CONFIG_GPR_RESPONSE, response_msg)

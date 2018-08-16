@@ -1,0 +1,20 @@
+{
+  "title": "TelemGpsNmea",
+  "type": "object",
+  "required": [
+    "timestamp",
+    "nmeaRecord"
+  ],
+  "properties": {
+    "nmeaRecord": {
+      "description": "standard NMEA record",
+      "type": "string"
+    },
+    "timestamp": {
+      "title": "Timestamp",
+      "description": "built-in ISO 8061 date-time format",
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

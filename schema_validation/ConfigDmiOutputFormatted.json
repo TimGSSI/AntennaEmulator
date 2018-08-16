@@ -1,0 +1,26 @@
+{
+  "title": "ConfigDmiOutputFormatted",
+  "type": "object",
+  "properties": {
+    "messagesPerSec": {
+      "description": "scans per meter",
+      "type": "number",
+      "minimum": 0,
+      "default": 0
+    },
+    "publish": {
+      "description": "",
+      "type": "boolean",
+      "default": false
+    },
+    "timestamp": {
+      "description": "timestamp in iso8601 format, example: 2018-08-01T12:58:40.877Z",
+      "type": "string"
+    },
+    "uuid": {
+      "description": "Unique message id for tracking config lifecycle",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

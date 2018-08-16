@@ -1,0 +1,26 @@
+{
+  "title": "DMI State Object",
+  "description": "Controls the DMI Subsystem",
+  "type": "object",
+  "properties": {
+    "delay": {
+      "description": "specifies delay length",
+      "type": "number",
+      "default": 0
+    },
+    "newState": {
+      "description": "describes whether the antenna is sending DMI information messages or not",
+      "type": "string",
+      "enum": ["run", "idle"]
+    },
+    "timestamp": {
+      "description": "timestamp in iso8601 format, example: 2018-08-01T12:58:40.877Z",
+      "type": "string"
+    },
+    "uuid": {
+      "description": "Unique message id for tracking config lifecycle",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

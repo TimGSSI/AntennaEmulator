@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "title": "Configuration Message Common Properties",
+  "description": "Debug message channel for server application logs",
+  "properties": {
+    "timestamp": {
+      "description": "timestamp in iso8601 format, example: 2018-08-01T12:58:40.877Z",
+      "type": "string"
+    },
+    "uuid": {
+      "description": "Unique message id for tracking config lifecycle",
+      "type": "string"
+    }
+  }
+}
