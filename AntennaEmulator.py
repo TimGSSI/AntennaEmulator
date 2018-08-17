@@ -23,6 +23,10 @@ def on_message(client, userdata, message):
 
 def main(argv):
 
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath)
+    os.chdir(dname)
+
     # Set global debug options
     test_topics = False
     nemaTalker = False
@@ -58,10 +62,6 @@ def main(argv):
     client.subscribe(ig.CONTROL_GPR_STATE_TOPIC)    #"control/gpr/state"
     client.subscribe(ig.CONTROL_BATTERY_STATE)      #"control/battery/state"
     client.subscribe(ig.CONTROL_DMI_TOPIC)          #"control/dmi/state"
-
-    abspath = os.path.abspath(__file__)
-    dname = os.path.dirname(abspath)
-    os.chdir(dname)
 
     if ig.useNemaTalker == False:
         GPS_filename = "FILE__001.DZG"
