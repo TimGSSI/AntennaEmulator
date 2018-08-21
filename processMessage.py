@@ -28,8 +28,11 @@ def processMessage(msg, client):
         else:
             send_data = False    
 
-        response_msg = msg.payload.decode("utf-8")
-        client.publish(ig.CONTROL_GPR_STATE_RESPONSE, response_msg)
+        incomingMessage = msg.payload.decode("utf-8")
+
+        responseMessage = mp.prepareControlResponseMessage(incomingMessage)
+
+        client.publish(ig.CONTROL_GPR_STATE_RESPONSE, responseMessage)
 
         values = {'msg':'control_GPR_msg'}
         values['send_data'] = send_data
@@ -48,8 +51,11 @@ def processMessage(msg, client):
         else:
             enableDMI = False
 
-        response_msg = msg.payload.decode("utf-8")
-        client.publish(ig.CONTROL_DMI_STATE_RESPONSE, response_msg)
+        incomingMessage = msg.payload.decode("utf-8")
+
+        responseMessage = mp.prepareControlResponseMessage(incomingMessage)
+
+        client.publish(ig.CONTROL_DMI_STATE_RESPONSE, responseMessage)
 
         values = {'msg':'control_DMI_msg'}
         values['enable_DMI'] = enableDMI        
@@ -68,9 +74,11 @@ def processMessage(msg, client):
         else:
             ig.GPS_TELEM_ENABLED = False
 
-        response_msg = msg.payload.decode("utf-8")
+        incomingMessage = msg.payload.decode("utf-8")
 
-        client.publish(ig.CONTROL_GPS_STATE_RESPONSE, response_msg)
+        responseMessage = mp.prepareControlResponseMessage(incomingMessage)
+
+        client.publish(ig.CONTROL_GPS_STATE_RESPONSE, responseMessage)
         values = {'msg':'control_gps_msg'}
 
         return values
@@ -87,8 +95,11 @@ def processMessage(msg, client):
         else:
             ig.BATTERY_TELEM_ENABLED = False
 
-        response_msg = msg.payload.decode("utf-8")
-        client.publish(ig.CONTROL_BATTERY_STATE_RESPONSE, response_msg)
+        incomingMessage = msg.payload.decode("utf-8")
+
+        responseMessage = mp.prepareControlResponseMessage(incomingMessage)
+
+        client.publish(ig.CONTROL_BATTERY_STATE_RESPONSE, responseMessage)
         
         values = {'msg':'control_battery_msg'}
         # this topic does nothing right now because this message does not exist yet
@@ -220,8 +231,9 @@ def processMessage(msg, client):
             antenna4['timeRangeNs'] = json_msg['channels'][3]['timeRangeNs']
             values['antenna4'] = antenna4
 
-        response_msg = msg.payload.decode("utf-8")
-        client.publish(ig.CONFIG_GPR_RESPONSE, response_msg)
+        incomingMessage = msg.payload.decode("utf-8")
+
+        client.publish(ig.CONFIG_GPR_RESPONSE, incomingMessage)
 
         return values
 

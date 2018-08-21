@@ -1,6 +1,7 @@
 import pendulum
 import json
 import jsonschema
+import uuid
 from queue import Queue
 
 def getJSONSchemaObject(file_name):
@@ -15,6 +16,8 @@ def getJSONSchemaObject(file_name):
 def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
 
     global q
+    global VERSION_NUMBER
+    global ANTENNA_UUID
 
     global useNemaTalker
     global INCOMING_SCHEMA_VALIDATION
@@ -69,6 +72,10 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     global CONTROL_DMI_SCHEMA
     global CONTROL_BATTERY_SCHEMA
     global ROOT_VALIDATOR_SCHEMA
+
+    ANTENNA_UUID = str(uuid.uuid4())
+    print("ANTENNA_UUID: " )
+    print(ANTENNA_UUID)
     
     if incoming == True:
         INCOMING_SCHEMA_VALIDATION = True
@@ -166,6 +173,8 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
         useNemaTalker = True
     else:
         useNemaTalker = False
+
+    VERSION_NUMBER = ""
 
     NOW = pendulum.now()
     ONE_MIN = NOW.add(minutes=1)

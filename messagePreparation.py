@@ -1,5 +1,6 @@
 from datetime import datetime
 from datetime import timezone
+import initializeGlobals as ig
 import sys
 
 def prepareTimestamp():
@@ -160,3 +161,24 @@ def prepareDMIMessage(scan_number):
 }"""  % (timestamp, scan_number)
     
     return DMIMessage
+
+def prepareControlResponseMessage(incomingMessage):
+
+    timestamp = prepareTimestamp()
+    myUUID = ""
+
+    # generate UUID through python and publish it to message
+    # timestamp at time of response
+
+    #request {} exactly what was sent
+    #result{} what was sent minus timestamp
+
+    controlResponseMessage = """
+{ 
+  "uuid": "%s", 
+  "timestamp": "%s", 
+  "request": %s,  
+  "result": %s
+}"""  % (ig.ANTENNA_UUID, timestamp, incomingMessage, incomingMessage)
+
+    return controlResponseMessage

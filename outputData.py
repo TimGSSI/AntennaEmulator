@@ -73,8 +73,11 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
     newBinNumber = -1 # bin with the highest value
     lastBinNumber = -1 # previous bin
 
-    scan_count = 0
     initial_samples = samples_per_scan
+    #initial_
+    #initial_
+
+    scan_count = 0
     scanMessagesSent = 0
     totalTickCount = 0
     lastTickCount = 0
