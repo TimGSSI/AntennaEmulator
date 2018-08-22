@@ -74,9 +74,8 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
     lastBinNumber = -1 # previous bin
 
     initial_samples = samples_per_scan
-    #initial_
-    #initial_
-
+    initial_scanRate = scanRate
+    
     scan_count = 0
     scanMessagesSent = 0
     totalTickCount = 0
@@ -195,7 +194,6 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                         #print(JSON_GPR)
                         client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
                         scan_count+=1
-
                         
                     elif currentBinNumber <= newBinNumber and forwards == False:
                         if currentBinNumber < lastBinNumber:

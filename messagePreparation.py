@@ -162,23 +162,15 @@ def prepareDMIMessage(scan_number):
     
     return DMIMessage
 
-def prepareControlResponseMessage(incomingMessage):
+def prepareControlResponseMessage(incomingMessage, messageWithoutDate):
 
     timestamp = prepareTimestamp()
-    myUUID = ""
 
-    # generate UUID through python and publish it to message
-    # timestamp at time of response
-
-    #request {} exactly what was sent
-    #result{} what was sent minus timestamp
-
-    controlResponseMessage = """
-{ 
+    controlResponseMessage = """{ 
   "uuid": "%s", 
   "timestamp": "%s", 
   "request": %s,  
   "result": %s
-}"""  % (ig.ANTENNA_UUID, timestamp, incomingMessage, incomingMessage)
+}"""  % (ig.ANTENNA_UUID, timestamp, incomingMessage, messageWithoutDate)
 
     return controlResponseMessage

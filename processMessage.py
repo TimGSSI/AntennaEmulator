@@ -28,9 +28,13 @@ def processMessage(msg, client):
         else:
             send_data = False    
 
-        incomingMessage = msg.payload.decode("utf-8")
+        fullMessage = msg.payload.decode("utf-8")
+        messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
 
-        responseMessage = mp.prepareControlResponseMessage(incomingMessage)
+        del messageWithoutTimestamp['timestamp']
+        messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
+
+        responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
 
         client.publish(ig.CONTROL_GPR_STATE_RESPONSE, responseMessage)
 
@@ -51,9 +55,13 @@ def processMessage(msg, client):
         else:
             enableDMI = False
 
-        incomingMessage = msg.payload.decode("utf-8")
+        fullMessage = msg.payload.decode("utf-8")
+        messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
 
-        responseMessage = mp.prepareControlResponseMessage(incomingMessage)
+        del messageWithoutTimestamp['timestamp']
+        messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
+        
+        responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
 
         client.publish(ig.CONTROL_DMI_STATE_RESPONSE, responseMessage)
 
@@ -74,9 +82,13 @@ def processMessage(msg, client):
         else:
             ig.GPS_TELEM_ENABLED = False
 
-        incomingMessage = msg.payload.decode("utf-8")
+        fullMessage = msg.payload.decode("utf-8")
+        messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
 
-        responseMessage = mp.prepareControlResponseMessage(incomingMessage)
+        del messageWithoutTimestamp['timestamp']
+        messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
+
+        responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
 
         client.publish(ig.CONTROL_GPS_STATE_RESPONSE, responseMessage)
         values = {'msg':'control_gps_msg'}
@@ -95,9 +107,13 @@ def processMessage(msg, client):
         else:
             ig.BATTERY_TELEM_ENABLED = False
 
-        incomingMessage = msg.payload.decode("utf-8")
+        fullMessage = msg.payload.decode("utf-8")
+        messageWithoutTimestamp = stripDateFromJSONObject(incomingMessage)
 
-        responseMessage = mp.prepareControlResponseMessage(incomingMessage)
+        del messageWithoutTimestamp['timestamp']
+        messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
+
+        responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
 
         client.publish(ig.CONTROL_BATTERY_STATE_RESPONSE, responseMessage)
         
@@ -135,8 +151,15 @@ def processMessage(msg, client):
         values['scansPerMeter'] = json_msg["scansPerMeter"]
         values['binSize'] = binSize
 
-        response_msg = msg.payload.decode("utf-8")
-        client.publish(ig.CONFIG_DMI_0_RESPONSE, response_msg)
+        fullMessage = msg.payload.decode("utf-8")
+        messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
+
+        del messageWithoutTimestamp['timestamp']
+        messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
+
+        responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
+
+        client.publish(ig.CONFIG_DMI_0_RESPONSE, responseMessage)
 
         return values
 
@@ -150,8 +173,15 @@ def processMessage(msg, client):
         values = {'msg':'config_dmi_0_output_formatted'}
         values['publish'] = json_msg["publish"]
 
-        response_msg = msg.payload.decode("utf-8")
-        client.publish(ig.CONFIG_DMI_0__OUTPUT_FORMATTED_RESPONSE, response_msg)
+        fullMessage = msg.payload.decode("utf-8")
+        messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
+
+        del messageWithoutTimestamp['timestamp']
+        messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
+
+        responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
+
+        client.publish(ig.CONFIG_DMI_0__OUTPUT_FORMATTED_RESPONSE, responseMessage)
 
         return values
                 
@@ -231,9 +261,17 @@ def processMessage(msg, client):
             antenna4['timeRangeNs'] = json_msg['channels'][3]['timeRangeNs']
             values['antenna4'] = antenna4
 
-        incomingMessage = msg.payload.decode("utf-8")
+        #incomingMessage = msg.payload.decode("utf-8")
+        
+        fullMessage = msg.payload.decode("utf-8")
+        messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
 
-        client.publish(ig.CONFIG_GPR_RESPONSE, incomingMessage)
+        del messageWithoutTimestamp['timestamp']
+        messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
+
+        responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
+
+        client.publish(ig.CONFIG_GPR_RESPONSE, responseMessage)
 
         return values
 
