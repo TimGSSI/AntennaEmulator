@@ -3,43 +3,6 @@
   "type": "object",
   "description": "Values in this message come from the kernel /sys/class/power_supply/{}/uevent interface. See `Documentation/power/power_supply_class.txt` for details.",
   "properties": {
-    "timestamp": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "name": {
-      "type": "string"
-    },
-    "status": {
-      "type": "string"
-    },
-    "capacityLevel": {
-      "type": "string"
-    },
-    "health": {
-      "type": "string"
-    },
-    "present": {
-      "type": "integer",
-      "enum": [0, 1]
-    },
-    "technology": {
-      "type": "string"
-    },
-    "cycleCount": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "voltageNow": {
-      "title": "Instantaneous Battery Voltage",
-      "description": "μV",
-      "type": "integer"
-    },
-    "currentNow": {
-      "title": "Instantaneous Battery Current",
-      "description": "μA",
-      "type": "integer"
-    },
     "capacity": {
       "title": "Battery Capacity Remaining",
       "description": "Battery Capacity Remaining in Percent",
@@ -47,29 +10,72 @@
       "minimum": 0,
       "maximum": 100
     },
-    "temp": {
-      "title": "Temperature",
-      "description": "in tenths of degrees C",
+    "capacityLevel": {
+      "type": "string"
+    },
+    "chargeNow": {
+      "title": "Instantaneous Battery Charge",
+      "description": "μAh",
       "type": "integer"
     },
-    "serialNumber": {
-      "type": "string"
+    "currentNow": {
+      "title": "Instantaneous Battery Current",
+      "description": "μA",
+      "type": "integer"
+    },
+    "cycleCount": {
+      "type": "integer",
+      "minimum": 0
     },
     "energyNow": {
       "title": "Instantaneous Battery Capacity",
       "description": "μWh",
       "type": "integer"
     },
-    "changeNow": {
-      "title": "Instantaneous Battery Charge",
-      "description": "μAh",
-      "type": "integer"
+    "health": {
+      "type": "string"
     },
     "manufacturer": {
       "type": "string"
     },
     "modelName": {
       "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "present": {
+      "type": "integer",
+      "enum": [ 0, 1 ]
+    },
+    "serialNumber": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "technology": {
+      "type": "string"
+    },
+    "temp": {
+      "title": "Temperature",
+      "description": "in tenths of degrees C",
+      "type": "integer"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "timeToEmptyAvg": {
+      "title": "time to empty average",
+      "description": "Seconds left for battery to be considered empty, hardware averaged",
+      "type": "integer"
+    },
+    "voltageNow": {
+      "title": "Instantaneous Battery Voltage",
+      "description": "μV",
+      "type": "integer"
     }
-  }
+  },
+  "additionalProperties": false
 }

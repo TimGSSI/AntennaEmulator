@@ -1,18 +1,28 @@
 {
-  "title": "ConfigDmi",
+  "title": "ConfigGps",
   "type": "object",
   "properties": {
-    "scansPerMeter": {
-      "description": "scans per meter",
-      "type": "number",
-      "minimum": 0.0,
-      "default": 100.0
+    "baudRate": {
+      "description": "baud rate value",
+      "type": "integer"
     },
-    "ticksPerMeter": {
-      "description": "ticks per meter",
-      "type": "number",
-      "minimum": 0.0,
-      "default": 407.44
+    "connection": {
+      "description": "connection type",
+      "type": "string",
+      "enum": ["BT", "RS232"]
+    },
+    "configString": {
+      "description": "ASCII string to send to GPS",
+      "type": "string"
+    },
+    "enable": {
+      "description": "enable the GPS [true|false]",
+      "type": "boolean"
+    },
+    "type": {
+      "description": "gps type",
+      "type": "string",
+      "enum": ["internal", "NMEA", "Trimble"]
     },
     "timestamp": {
       "description": "timestamp in iso8601 format, example: 2018-08-01T12:58:40.877Z",

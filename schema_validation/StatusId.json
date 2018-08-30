@@ -1,0 +1,31 @@
+{
+  "title": "Status ID Object",
+  "description": "Controls the GPR Subsystem",
+  "type": "object",
+  "properties": {
+    "deviceId": {
+      "description": "antenna code",
+      "type": "string"
+    },
+    "model": {
+      "description": "antenna model tag",
+      "type": "string",
+      "enum": ["200LF", "100LF"]
+    },
+    "positionOffsetPs": {
+      "description": "last position calibration result",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 800000
+    },
+    "timestamp": {
+      "description": "timestamp in iso8601 format, example: 2018-08-01T12:58:40.877Z",
+      "type": "string"
+    },
+    "uuid": {
+      "description": "Unique message id for tracking config lifecycle",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

@@ -33,15 +33,51 @@ def prepareBatteryMessage(capacity, battery_time):
     battMessage = """
 {
   "timestamp": "%s",
-  "temperature": 0,
-  "voltage": 0,
-  "capacity": %s,
-  "time": %s
-}""" % (timestamp, capacity, battery_time)
+  "temp": 0,
+  "voltageNow": 0,
+  "timeToEmptyAvg": %s
+}""" % (timestamp, battery_time)
 
     print(battMessage)
 
     return battMessage
+
+def prepareConfigIdMessage(deviceId, model, antennaGain, positionOffset):
+
+    UUID = ig.ANTENNA_UUID
+
+    configIdMessage = """
+{
+  "datasheet": {
+    "manufactureId": 0,
+    "manufactureModel": %s,
+    "manufactureVersion": 0,
+    "name": "%s",
+    "serial": 12345,
+    "size": 0,
+    "uuid": "%s",
+    "version": 0
+  },
+  "payload": {
+    "gainDb": %s,
+    "positionOffsetPs": %s
+  },
+  "uuid": "%s"
+}""" % (deviceId, model, UUID, antennaGain, positionOffset, UUID)
+
+#    configIdMessage = """
+#{
+#  "timestamp": "%s",
+#  "uuid": "%s",
+#  "deviceId": "%s",
+#  "model": "%s",
+#  "positionOffsetPS": %s,
+#  "antennaGain": %s
+#}""" % (timestamp, UUID, deviceId, model, positionOffset, antennaGain)
+
+    print(configIdMessage)
+
+    return configIdMessage
 
 def prepareGPRSurveyMessage(scan_number, encoded_data, distance):
 

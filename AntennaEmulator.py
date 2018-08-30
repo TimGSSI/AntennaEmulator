@@ -10,6 +10,8 @@ import socket
 import time
 import sys
 import os
+import json
+import jsonschema
 
 def on_connect(client, userdata, flags, rc):
     if rc==0:
@@ -31,11 +33,10 @@ def main(argv):
     test_topics = False
     nemaTalker = False
     incoming_schema_validation = True
-    outgoing_schema_validation = False
+    outgoing_schema_validation = True
 
     ig.initialize_globals(test_topics, nemaTalker, incoming_schema_validation, outgoing_schema_validation)
 
-    #broker="10.40.11.7" # work PC
     broker="localhost"
     #broker="10.40.11.184" # gssitest2
     #broker="10.40.11.138" # gssitest3    
@@ -62,6 +63,8 @@ def main(argv):
     client.subscribe(ig.CONTROL_GPR_STATE_TOPIC)    #"control/gpr/state"
     client.subscribe(ig.CONTROL_BATTERY_STATE)      #"control/battery/state"
     client.subscribe(ig.CONTROL_DMI_TOPIC)          #"control/dmi/state"
+    client.subscribe(ig.STATUS_ID)                  #"status/id"
+    client.subscribe(ig.CONFIG_STORAGE_ANTENNA)     #"config/storage/antenna"
 
     if ig.useNemaTalker == False:
         GPS_filename = "FILE__001.DZG"
@@ -222,21 +225,34 @@ def main(argv):
                 if GPS_file_line == len(GPS_data):
                     GPS_file_line = 0
                 JSON_GPS = mp.prepareGPSMessage(GPS_data[GPS_file_line])
+                json_validate = json.loads(JSON_GPS)
+                    
+                if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                    jsonschema.validate(json_validate, ig.TELEM_GPS_NMEA_SCHEMA)
                 GPS_file_line += 1
             else:
                 GPS, addr = soc.recvfrom(128)
                 GPS = GPS.decode("utf-8").strip()
                 JSON_GPS = mp.prepareGPSMessage(GPS)
+                json_validate = json.loads(JSON_GPS)
+                    
+                if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                    jsonschema.validate(json_validate, ig.TELEM_GPS_NMEA_SCHEMA)
 
             client.publish(ig.GPS_NMEA_TOPIC, JSON_GPS)
             
             lastGPSCheck = pendulum.parse(mp.prepareTimestamp())
 
-        if batt_time > ig.ONE_MIN and ig.BATTERY_TELEM_ENABLED == True:
+        if batt_time > ig.ONE_MIN: #and ig.BATTERY_TELEM_ENABLED == True:
             ig.BATTERY_CAPACITY -= 5
             ig.BATTERY_MINUTES_LEFT -= 5
 
             JSON_battery = mp.prepareBatteryMessage(ig.BATTERY_CAPACITY, ig.BATTERY_MINUTES_LEFT) 
+
+            json_validate = json.loads(JSON_battery)
+                    
+            if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                jsonschema.validate(json_validate, ig.TELEM_BATTERY_SCHEMA)
 
             client.publish(ig.BATTERY_TOPIC, JSON_battery)
 

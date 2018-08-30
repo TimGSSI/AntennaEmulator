@@ -12,6 +12,8 @@ import os
 import struct
 import socket
 import math
+import json
+import jsonschema
 from random import randint
 from queue import Queue
 
@@ -83,8 +85,10 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
 
     nextBackup = 300
 
-    tick_high_end = int(binSize * 0.90) 
-    tick_low_end = int(binSize * 0.40)
+    #tick_high_end = int(binSize * 0.90) 
+    #tick_low_end = int(binSize * 0.40)
+    tick_high_end = 250
+    tick_low_end = 150
     print("tick_low_end: " + str(tick_low_end))
     print("tick_high_end: " + str(tick_high_end))
 
@@ -101,7 +105,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
         period = 1.0 / scanRate
 
         if header_skipped == False:
-            data_file.read(131072) # reads to the end of the header (128 KB)
+            data_file.read(131072) # reads to the end of the file header (128 KB)
             header_skipped = True
 
         currentTime = pendulum.parse(mp.prepareTimestamp())
@@ -192,6 +196,12 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                     
                         JSON_GPR = mp.prepareGPRSurveyMessage(scan_count, encoded_data, distance)
                         #print(JSON_GPR)
+
+                        json_validate = json.loads(JSON_GPR)
+                    
+                        if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                            jsonschema.validate(json_validate, ig.TELEM_GPR_RAW_SCHEMA)
+
                         client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
                         scan_count+=1
                         
@@ -201,6 +211,12 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                                 print("currentBinNumber: " + str(currentBinNumber))
                             scan_count-=1
                             roll_back = mp.prepareDMIMessage(scan_count);
+
+                            json_validate = json.loads(roll_back)
+                    
+                            if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                                jsonschema.validate(json_validate, ig.TELEM_DMI_FORMATTED_SCHEMA)
+
                             client.publish(ig.DMI_TOPIC, roll_back)
                             time.sleep(0.01)
                             lastBinNumber = currentBinNumber
@@ -210,6 +226,12 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                                 print("currentBinNumber: " + str(currentBinNumber))
                             scan_count+=1
                             roll_back = mp.prepareDMIMessage(scan_count);
+
+                            json_validate = json.loads(roll_back)
+                    
+                            if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                                jsonschema.validate(json_validate, ig.TELEM_DMI_FORMATTED_SCHEMA)
+
                             client.publish(ig.DMI_TOPIC, roll_back)
                             time.sleep(0.01)
                             lastBinNumber = currentBinNumber
@@ -244,6 +266,12 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
 
                     JSON_GPR = mp.prepareGPRCombinedMessage(scan_count, totalTickCount, encoded_data, distance)
                     #print(JSON_GPR)
+
+                    json_validate = json.loads(JSON_GPR)
+                    
+                    if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                        jsonschema.validate(json_validate, ig.TELEM_GPR_RAW_SCHEMA)
+
                     client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
                     scan_count+=1
 
@@ -255,6 +283,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                     data_chunk = data_file.read(samples_per_scan * 4) # unpacks binary data to read as 4-byte int
                     data_chunk_size = samples_per_scan * 4
             
+                    # unpacks the first 4 bytes which contain current scan number (sanity check)
                     data = [data_chunk[0], data_chunk[1], data_chunk[2], data_chunk[3]]
                     data = struct.unpack("I", bytearray(data))
                     data = data[0]
@@ -265,6 +294,11 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
 
                     JSON_GPR = mp.prepareGPRFreerunMessage(scan_count, encoded_data)
                     #print(JSON_GPR)
+                    json_validate = json.loads(JSON_GPR)
+                    
+                    if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                        jsonschema.validate(json_validate, ig.TELEM_GPR_RAW_SCHEMA)
+
                     client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
                     start += period
                     scan_count+=1
@@ -273,13 +307,20 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                         print("scan_count: " + str(scan_count))
    
         if GPS_time > ig.FIFTH_OF_SEC and ig.GPS_TELEM_ENABLED == True:            
-        
+            
             if ig.useNemaTalker == False:
                 if send_GPS_data == True:
                     if GPS_file_line == len(GPS_data) - 1:
+                        #GPS_file_line = 0 # to make gps file loop endlessly uncomment this line and comment out line below
                         send_GPS_data = False
-                        #GPS_file_line = 0
+                        
                     JSON_GPS = mp.prepareGPSMessage(GPS_data[GPS_file_line])
+                    
+                    json_validate = json.loads(JSON_GPS)
+                    
+                    if ig.OUTGOING_SCHEMA_VALIDATION == True:         
+                        jsonschema.validate(json_validate, ig.TELEM_GPS_NMEA_SCHEMA)
+
                     #print("GPS Message: " + str(JSON_GPS))
                     GPS_file_line += 1
 
@@ -288,18 +329,28 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                 GPS = GPS.decode("utf-8").strip()
 
                 JSON_GPS = mp.prepareGPSMessage(GPS)
+                json_validate = json.loads(JSON_GPS)
+                    
+                if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                    jsonschema.validate(json_validate, ig.TELEM_GPS_NMEA_SCHEMA)
 
             if send_GPS_data == True:
                 client.publish(ig.GPS_NMEA_TOPIC, JSON_GPS)
             
             lastGPSCheck = pendulum.parse(mp.prepareTimestamp())            
         
-        if batt_time > ig.ONE_MIN and ig.BATTERY_TELEM_ENABLED == True:
+        if batt_time > ig.ONE_MIN: #and ig.BATTERY_TELEM_ENABLED == True:
 
             ig.BATTERY_CAPACITY -= 5
             ig.BATTERY_MINUTES_LEFT -= 5 
-            
+   
             JSON_battery = mp.prepareBatteryMessage(ig.BATTERY_CAPACITY, ig.BATTERY_MINUTES_LEFT) 
+            
+            json_validate = json.loads(JSON_battery)
+                    
+            if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                jsonschema.validate(json_validate, ig.TELEM_BATTERY_SCHEMA)
+            
             client.publish(ig.BATTERY_TOPIC, JSON_battery)
             lastBatteryCheck = pendulum.parse(mp.prepareTimestamp())
         

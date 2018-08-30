@@ -1,26 +1,56 @@
 {
-  "title": "ConfigDmi",
+  "title": "TelemGprRaw",
   "type": "object",
   "properties": {
-    "scansPerMeter": {
-      "description": "scans per meter",
-      "type": "number",
-      "minimum": 0.0,
-      "default": 100.0
+    "dmi/0": {
+      "type": "object",
+      "description": "distance measurement instrument position output",
+      "properties": {
+        "binNumber": {
+         "title": "DMI Bin Number",
+          "description": "dmi bin number",
+          "type": "integer"
+        },
+        "distanceM": {
+          "title": "DMI Distance in meters",
+          "description": "distance in meters",
+          "type": "number"
+        },
+        "timestamp": {
+          "title": "Timestamp",
+          "description": "timestamp in iso8601 format, example: 2018-08-01T12:58:40.877Z",
+          "type": "string",
+          "format": "date-time"
+        }
+      }
     },
-    "ticksPerMeter": {
-      "description": "ticks per meter",
-      "type": "number",
-      "minimum": 0.0,
-      "default": 407.44
+    "gpr/chan/0": {
+      "type": "object",
+      "description": "Time series of amplitude response to radar impulse",
+      "properties": {
+        "dataScan": {
+          "title": "Samples",
+          "description": "amplitude response base64 encoded int32 array",
+          "type": "string"
+        },
+        "scanNumber": {
+          "title": "Sequence Number",
+          "description": "Sequence number for dropped scan detection",
+          "type": "integer"
+        },
+        "timestamp": {
+          "title": "Timestamp",
+          "description": "timestamp in iso8601 format, example: 2018-08-01T12:58:40.877Z",
+          "type": "string",
+          "format": "date-time"
+        }
+      }
     },
     "timestamp": {
+      "title": "Timestamp",
       "description": "timestamp in iso8601 format, example: 2018-08-01T12:58:40.877Z",
-      "type": "string"
-    },
-    "uuid": {
-      "description": "Unique message id for tracking config lifecycle",
-      "type": "string"
+      "type": "string",
+      "format": "date-time"
     }
   },
   "additionalProperties": false

@@ -16,6 +16,85 @@ from queue import Queue
 
 def processMessage(msg, client):
 
+    if msg.topic == ig.CONFIG_STORAGE_ANTENNA:
+
+        json_msg = json.loads(msg.payload.decode('utf-8'))
+                
+        config_msg = ""
+
+        if len(json_msg) == 0:        
+
+            ant_config_file = "persistent_config_values.txt"        
+            with open(ant_config_file) as f:
+                values = f.read()
+                f.close()
+            values = values.strip().split(",")
+            config_msg = mp.prepareConfigIdMessage(values[0].strip(), values[1].strip(), values[2].strip(), values[3].strip())
+            print("config_msg: ")
+            print(config_msg)
+
+        else:
+
+            ant_config_file = "persistent_config_values.txt"
+            with open(ant_config_file) as f:
+                values = f.read()
+                f.close()
+            values = values.strip().split(",")
+            print(values[0].strip())
+            print(values[1].strip())
+            print(values[2].strip())
+            print(values[3].strip())
+
+            dev_id = values[0]
+            model = values[1]
+            gain = values[2]
+            pos_off = values[3]
+            
+            if os.path.isfile("backup_persistent_config_values.txt"):
+                os.remove("backup_persistent_config_values.txt")
+                
+            os.rename("persistent_config_values.txt", "backup_persistent_config_values.txt")
+            time.sleep(0.1)
+            with open(ant_config_file, "w") as f:
+                f.write(dev_id.strip() + ",\n")
+                f.write(model.strip() + ",\n")
+                
+                if 'payload' in json_msg:
+                    
+                    if 'gainDb' in json_msg['payload']:
+                        f.write(str(json_msg['payload']['gainDb']) + ",\n")
+                    else:
+                        f.write(gain.strip() + ",\n")
+
+                    if 'positionOffsetPs' in json_msg['payload']:
+                        f.write(str(json_msg['payload']['positionOffsetPs']) + "\n")                        
+                    else:
+                        f.write(pos_off.strip() + "\n")
+
+                else:                     
+                    f.write(gain.strip() + "\n,")
+                    f.write(pos_off.strip() + "\n")
+                f.close()
+            
+            with open(ant_config_file) as f:
+                values = f.read()
+                f.close()
+
+            values = values.strip().split(",")
+
+            config_msg = mp.prepareConfigIdMessage(values[0].strip(), values[1].strip(), values[2].strip(), values[3].strip())
+
+        fullMessage = config_msg
+        
+        messageWithoutTimestamp = json.loads(fullMessage)
+
+        messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
+
+        responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
+        print("response message: " + str(responseMessage))
+        
+        client.publish(ig.CONFIG_STORAGE_ANTENNA_RESPONSE, responseMessage)
+
     if msg.topic == ig.CONTROL_GPR_STATE_TOPIC:
 
         json_msg = json.loads(msg.payload.decode('utf-8'))
@@ -191,7 +270,6 @@ def processMessage(msg, client):
 
         if ig.INCOMING_SCHEMA_VALIDATION == True:  
             jsonschema.validate(json_msg, ig.CONFIG_GPR_SCHEMA)
-            #jsonschema.validate(json_msg, ig.CONFIG_GPS_SCHEMA) # Tests incorrect schema validation file
 
         values = {'msg':'config_gpr'}
         values['samples_per_scan'] = json_msg["samples"]
@@ -270,8 +348,40 @@ def processMessage(msg, client):
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
 
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
+        
+        current_sampPerScan = json_msg["samples"]
+        current_timeRange = json_msg['channels'][0]['timeRangeNs']
+        #current_positionOffsetNs = json_msg['channels'][0]['positionOffsetPs']
+        current_positionOffsetNs = 152000
+        valid_timeRange = 0
+        
+        print("current_positionOffsetNs: " + str(current_positionOffsetNs))
+        if current_positionOffsetNs % 0x2000 == 0:
+            print("positionOffsetNs is evenly divisible by 0x2000")
+            print(current_positionOffsetNs % 0x2000)
+        else:
+            print("positionOffsetNs is NOT evenly divisible by 0x2000")
+            print(current_positionOffsetNs % 0x2000)
 
-        client.publish(ig.CONFIG_GPR_RESPONSE, responseMessage)
+        print("current_sampPerScan: " + str(current_sampPerScan))
+        print("current_timeRange: " + str(current_timeRange))
+        
+        if current_sampPerScan == current_timeRange:
+            valid_timeRange = current_timeRange
+        elif (current_sampPerScan * 2) == current_timeRange:
+            valid_timeRange = current_timeRange
+        elif (current_sampPerScan / 2) == current_timeRange:
+            valid_timeRange = current_timeRange
+        elif (current_sampPerScan / 4) == current_timeRange:
+            valid_timeRange = current_timeRange
+        elif (current_sampPerScan / 8) == current_timeRange:
+            valid_timeRange = current_timeRange
+        else:
+            raise ValueError('timeRangeNs value does not fall within acceptable range.  Current timeRangeNs value: ' + struct(current_timeRange))
+            # publish response timerange error message to UI here 
+        
+        if valid_timeRange != 0:
+            client.publish(ig.CONFIG_GPR_RESPONSE, responseMessage)
 
         return values
 

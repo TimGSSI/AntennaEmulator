@@ -1,0 +1,28 @@
+{
+  "title": "Config ID Object",
+  "description": "Stores calibration values on the antenna",
+  "type": "object",
+  "properties": {
+    "antennaGain": {
+      "description": "last antenna gain calibration result",
+      "type": "number",
+      "minimum": -200,
+      "maximum": 200
+    },
+    "positionOffsetPs": {
+      "description": "last position calibration result",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 800000
+    },
+    "timestamp": {
+      "description": "timestamp in iso8601 format, example: 2018-08-01T12:58:40.877Z",
+      "type": "string"
+    },
+    "uuid": {
+      "description": "Unique message id for tracking config lifecycle",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

@@ -8,12 +8,6 @@
     "distanceM"
   ],
   "properties": {
-    "timestamp": {
-      "title": "Timestamp",
-      "description": "built-in ISO 8601 date-time format",
-      "type": "string",
-      "format": "date-time"
-    },
     "binNumber": {
       "title": "DMI Bin Number",
       "description": "dmi bin number",
@@ -23,6 +17,13 @@
       "title": "DMI Distance in meters",
       "description": "distance in meters",
       "type": "number"
+    },
+    "timestamp": {
+      "title": "Timestamp",
+      "description": "built-in ISO 8601 date-time format",
+      "type": "string",
+      "format": "date-time"
     }
-  }
+  },
+  "additionalProperties": false
 }

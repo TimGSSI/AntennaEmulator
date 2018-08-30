@@ -39,6 +39,8 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     global CONFIG_GPS_TOPIC
     global CONTROL_GPR_STATE_TOPIC
     global CONTROL_BATTERY_STATE
+    global STATUS_ID
+    global CONFIG_STORAGE_ANTENNA
 
     global CONFIG_GPR_RESPONSE
     global CONFIG_GPS_RESPONSE
@@ -48,6 +50,8 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     global CONTROL_GPS_STATE_RESPONSE
     global CONTROL_GPR_STATE_RESPONSE
     global CONTROL_BATTERY_STATE_RESPONSE
+    global STATUS_ID_RESPONSE
+    global CONFIG_STORAGE_ANTENNA_RESPONSE
 
     global FIFTH_OF_SEC
     global TENTH_SEC
@@ -73,9 +77,16 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     global CONTROL_BATTERY_SCHEMA
     global ROOT_VALIDATOR_SCHEMA
 
+    global TELEM_GPR_RAW_SCHEMA
+    global TELEM_BATTERY_SCHEMA
+    global TELEM_DMI_FORMATTED_SCHEMA
+    global TELEM_GPS_NMEA_SCHEMA
+    global STATUS_ID_SCHEMA
+
     ANTENNA_UUID = str(uuid.uuid4())
-    print("ANTENNA_UUID: " )
-    print(ANTENNA_UUID)
+    print("ANTENNA_UUID: " + str(ANTENNA_UUID) + "\n" )
+
+    VERSION_NUMBER = "1.001"
     
     if incoming == True:
         INCOMING_SCHEMA_VALIDATION = True
@@ -98,6 +109,11 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
         control_dmi_validation_file = "ControlDmi.json"
         control_battery_validation_file = "ControlBattery.json"
         
+        telem_gpr_raw_validation_file = "TelemGprRaw.json"
+        telem_battery_validation_file = "TelemBattery.json"
+        telem_dmi_formatted_validation_file = "TelemDmiFormatted.json"
+        telem_gps_nmea_validation_file = "TelemGpsNmea.json"
+        
         CONFIG_GPR_SCHEMA = getJSONSchemaObject(config_gpr_validation_file)
         CONFIG_GPS_SCHEMA = getJSONSchemaObject(config_gps_validation_file)
         CONFIG_DMI_SCHEMA = getJSONSchemaObject(config_dmi_validation_file)
@@ -106,6 +122,11 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
         CONTROL_GPS_SCHEMA = getJSONSchemaObject(control_gps_validation_file)
         CONTROL_DMI_SCHEMA = getJSONSchemaObject(control_dmi_validation_file)        
         CONTROL_BATTERY_SCHEMA = getJSONSchemaObject(control_battery_validation_file)
+        
+        TELEM_GPR_RAW_SCHEMA = getJSONSchemaObject(telem_gpr_raw_validation_file)
+        TELEM_BATTERY_SCHEMA = getJSONSchemaObject(telem_battery_validation_file)
+        TELEM_DMI_FORMATTED_SCHEMA = getJSONSchemaObject(telem_dmi_formatted_validation_file)
+        TELEM_GPS_NMEA_SCHEMA = getJSONSchemaObject(telem_gps_nmea_validation_file)
 
     if test_topics == True:
         # outgoing messages
@@ -114,6 +135,8 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
         GPR_TOPIC = "test/telem/gpr"
         TELEM_GPR_RAW_TOPIC = "test/telem/gpr/raw"
         DMI_TOPIC = "test/telem/dmi/formatted"
+        STATUS_ID = "test/status/id"
+        CONFIG_STORAGE_ANTENNA = "test/config/storage/ant"
 
         # incoming messages
         CONFIG_DEVICE_TOPIC = "test/config/device"
@@ -137,6 +160,8 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
         CONTROL_GPR_STATE_RESPONSE = "test/response/control/gpr/state"
         CONTROL_BATTERY_STATE_RESPONSE = "test/response/control/battery/state"
         CONTROL_DMI_STATE_RESPONSE = "test/response/control/dmi/state"
+        STATUS_ID_RESPONSE = "test/response/status/id"
+        CONFIG_STORAGE_ANTENNA_RESPONSE = "test/response/config/storage/ant"
 
     else:
         # outgoing messages
@@ -145,6 +170,8 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
         GPR_TOPIC = "telem/gpr"
         TELEM_GPR_RAW_TOPIC = "telem/gpr/raw"
         DMI_TOPIC = "telem/dmi/formatted"
+        STATUS_ID = "status/id"
+        CONFIG_STORAGE_ANTENNA = "config/storage/ant"
 
         # incoming messages
         CONFIG_DEVICE_TOPIC = "config/device"
@@ -168,13 +195,13 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
         CONTROL_GPR_STATE_RESPONSE = "response/control/gpr/state"
         CONTROL_BATTERY_STATE_RESPONSE = "response/control/battery/state"
         CONTROL_DMI_STATE_RESPONSE = "response/control/dmi/state"
+        STATUS_ID_RESPONSE = "response/status/id"
+        CONFIG_STORAGE_ANTENNA_RESPONSE = "response/config/storage/ant"
 
     if nemaTalker == True:
         useNemaTalker = True
     else:
         useNemaTalker = False
-
-    VERSION_NUMBER = ""
 
     NOW = pendulum.now()
     ONE_MIN = NOW.add(minutes=1)
