@@ -85,12 +85,12 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
 
     nextBackup = 300
 
-    #tick_high_end = int(binSize * 0.90) 
+    #tick_high_end = int(binSize * 0.90) # these make it faster to check if the distance calculations are accurate
     #tick_low_end = int(binSize * 0.40)
     tick_high_end = 250
     tick_low_end = 150
-    print("tick_low_end: " + str(tick_low_end))
-    print("tick_high_end: " + str(tick_high_end))
+    #print("tick_low_end: " + str(tick_low_end))
+    #print("tick_high_end: " + str(tick_high_end))
 
     tickRange = [tick_low_end, tick_high_end]
     forwards = True
@@ -210,7 +210,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                             if currentBinNumber % 50 == 0 and currentBinNumber != 0:
                                 print("currentBinNumber: " + str(currentBinNumber))
                             scan_count-=1
-                            roll_back = mp.prepareDMIMessage(scan_count);
+                            roll_back = mp.prepareDMIMessage(scan_count, distance);
 
                             json_validate = json.loads(roll_back)
                     
@@ -218,6 +218,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                                 jsonschema.validate(json_validate, ig.TELEM_DMI_FORMATTED_SCHEMA)
 
                             client.publish(ig.DMI_TOPIC, roll_back)
+                            #print(roll_back)
                             time.sleep(0.01)
                             lastBinNumber = currentBinNumber
                     elif currentBinNumber <= newBinNumber and forwards == True:
@@ -225,7 +226,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                             if currentBinNumber % 50 == 0 and currentBinNumber != 0:
                                 print("currentBinNumber: " + str(currentBinNumber))
                             scan_count+=1
-                            roll_back = mp.prepareDMIMessage(scan_count);
+                            roll_back = mp.prepareDMIMessage(scan_count, distance);
 
                             json_validate = json.loads(roll_back)
                     
@@ -233,6 +234,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                                 jsonschema.validate(json_validate, ig.TELEM_DMI_FORMATTED_SCHEMA)
 
                             client.publish(ig.DMI_TOPIC, roll_back)
+                            #print(roll_back)
                             time.sleep(0.01)
                             lastBinNumber = currentBinNumber
 

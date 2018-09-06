@@ -23,7 +23,6 @@ def processMessage(msg, client):
         config_msg = ""
 
         if len(json_msg) == 0:        
-
             ant_config_file = "persistent_config_values.txt"        
             with open(ant_config_file) as f:
                 values = f.read()
@@ -34,60 +33,75 @@ def processMessage(msg, client):
             print(config_msg)
 
         else:
-
             ant_config_file = "persistent_config_values.txt"
             with open(ant_config_file) as f:
                 values = f.read()
                 f.close()
             values = values.strip().split(",")
-            print(values[0].strip())
-            print(values[1].strip())
-            print(values[2].strip())
-            print(values[3].strip())
 
-            dev_id = values[0]
-            model = values[1]
-            gain = values[2]
-            pos_off = values[3]
+            current_dev_id = values[0].strip()
+            current_ant_model = values[1].strip()
+            current_gain = values[2].strip()
+            current_pos_off = values[3].strip()
+            current_survey = values[4].strip()
             
-            if os.path.isfile("backup_persistent_config_values.txt"):
-                os.remove("backup_persistent_config_values.txt")
-                
-            os.rename("persistent_config_values.txt", "backup_persistent_config_values.txt")
-            time.sleep(0.1)
             with open(ant_config_file, "w") as f:
-                f.write(dev_id.strip() + ",\n")
-                f.write(model.strip() + ",\n")
+                f.write(current_dev_id.strip() + ",\n")
+                f.write(current_ant_model.strip() + ",\n")
                 
                 if 'payload' in json_msg:
-                    
                     if 'gainDb' in json_msg['payload']:
-                        f.write(str(json_msg['payload']['gainDb']) + ",\n")
+                        if json_msg['payload']['gainDb'] >= -200 and json_msg['payload']['gainDb'] <= 200:
+                            f.write(str(json_msg['payload']['gainDb']) + ",\n")
+                        else:
+                            print("gain is not in acceptable range, retaining previous value")
+                            f.write(current_gain.strip() + ",\n")
                     else:
-                        f.write(gain.strip() + ",\n")
+                        f.write(current_gain.strip() + ",\n")
 
                     if 'positionOffsetPs' in json_msg['payload']:
-                        f.write(str(json_msg['payload']['positionOffsetPs']) + "\n")                        
+                        if json_msg['payload']['positionOffsetPs'] >= 0 and json_msg['payload']['positionOffsetPs'] <= 800000:
+                            f.write(str(json_msg['payload']['positionOffsetPs']) + ",\n")
+                        else:
+                            print("position offset is not within acceptable range, retaining previous value")
+                            f.write(current_pos_off.strip() + ",\n")                        
                     else:
-                        f.write(pos_off.strip() + "\n")
+                        f.write(current_pos_off.strip() + ",\n")
+                    
+                    if 'surveyTicksPerM' in json_msg['payload']:
+                        if json_msg['payload']['surveyTicksPerM'] >= -100000 and json_msg['payload']['surveyTicksPerM'] <= 100000:
+                            f.write(str(json_msg['payload']['surveyTicksPerM']) + "\n")
+                        else:
+                            print("survey wheel calibration value is not within acceptable range, retaining previous value")
+                            f.write(current_survey.strip() + "\n")                        
+                    else:
+                        f.write(current_survey.strip() + "\n")
 
                 else:                     
-                    f.write(gain.strip() + "\n,")
-                    f.write(pos_off.strip() + "\n")
+                    f.write(current_gain.strip() + ",\n")
+                    f.write(current_pos_off.strip() + ",\n")
+                    f.write(current_survey.strip() + "\n")
                 f.close()
             
-            with open(ant_config_file) as f:
-                values = f.read()
-                f.close()
+            if 'payload' in json_msg:
+                if 'gainDb' in json_msg['payload']:
+                    current_gain = json_msg['payload']['gainDb']
+                    print(current_gain)
+                if 'positionOffsetPs' in json_msg['payload']:
+                    current_pos_off = json_msg['payload']['positionOffsetPs']
+                    print(current_pos_off)
+                if 'surveyTicksPerM' in json_msg['payload']:
+                    current_survey = json_msg['payload']['surveyTicksPerM']
+                    print(current_survey)
 
-            values = values.strip().split(",")
-
-            config_msg = mp.prepareConfigIdMessage(values[0].strip(), values[1].strip(), values[2].strip(), values[3].strip())
+            config_msg = mp.prepareConfigIdMessage(current_dev_id, current_ant_model, current_gain, current_pos_off, current_survey)
+            #print("config_msg: " + str(config_msg))
 
         fullMessage = config_msg
+        #print("full message")
+        print(fullMessage)
         
         messageWithoutTimestamp = json.loads(fullMessage)
-
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
 
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
@@ -351,17 +365,16 @@ def processMessage(msg, client):
         
         current_sampPerScan = json_msg["samples"]
         current_timeRange = json_msg['channels'][0]['timeRangeNs']
-        #current_positionOffsetNs = json_msg['channels'][0]['positionOffsetPs']
-        current_positionOffsetNs = 152000
+        current_positionOffsetNs = json_msg['channels'][0]['positionOffsetPs']
         valid_timeRange = 0
         
-        print("current_positionOffsetNs: " + str(current_positionOffsetNs))
-        if current_positionOffsetNs % 0x2000 == 0:
-            print("positionOffsetNs is evenly divisible by 0x2000")
-            print(current_positionOffsetNs % 0x2000)
-        else:
-            print("positionOffsetNs is NOT evenly divisible by 0x2000")
-            print(current_positionOffsetNs % 0x2000)
+        #print("current_positionOffsetNs: " + str(current_positionOffsetNs))
+        #if current_positionOffsetNs % 0x2000 == 0:
+        #    print("positionOffsetNs is evenly divisible by 0x2000")
+        #    print(current_positionOffsetNs % 0x2000)
+        #else:
+        #    print("positionOffsetNs is NOT evenly divisible by 0x2000")
+        #    print(current_positionOffsetNs % 0x2000)
 
         print("current_sampPerScan: " + str(current_sampPerScan))
         print("current_timeRange: " + str(current_timeRange))

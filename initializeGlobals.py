@@ -86,7 +86,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     ANTENNA_UUID = str(uuid.uuid4())
     print("ANTENNA_UUID: " + str(ANTENNA_UUID) + "\n" )
 
-    VERSION_NUMBER = "1.001"
+    VERSION_NUMBER = "1.002"
     
     if incoming == True:
         INCOMING_SCHEMA_VALIDATION = True

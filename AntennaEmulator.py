@@ -38,9 +38,6 @@ def main(argv):
     ig.initialize_globals(test_topics, nemaTalker, incoming_schema_validation, outgoing_schema_validation)
 
     broker="localhost"
-    #broker="10.40.11.184" # gssitest2
-    #broker="10.40.11.138" # gssitest3    
-    #broker="10.40.11.184" # gssitest6
 
     client = mqtt.Client("antenna_client") # create new instance
     client.on_connect=on_connect # bind call back functions

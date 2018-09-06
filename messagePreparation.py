@@ -38,11 +38,11 @@ def prepareBatteryMessage(capacity, battery_time):
   "timeToEmptyAvg": %s
 }""" % (timestamp, battery_time)
 
-    print(battMessage)
+    #print(battMessage)
 
     return battMessage
 
-def prepareConfigIdMessage(deviceId, model, antennaGain, positionOffset):
+def prepareConfigIdMessage(deviceId, model, antennaGain, positionOffset, survey_cal):
 
     UUID = ig.ANTENNA_UUID
 
@@ -60,22 +60,13 @@ def prepareConfigIdMessage(deviceId, model, antennaGain, positionOffset):
   },
   "payload": {
     "gainDb": %s,
-    "positionOffsetPs": %s
+    "positionOffsetPs": %s,
+    "surveyTicksPerM": %s
   },
   "uuid": "%s"
-}""" % (deviceId, model, UUID, antennaGain, positionOffset, UUID)
+}""" % (deviceId, model, UUID, antennaGain, positionOffset, survey_cal, UUID)
 
-#    configIdMessage = """
-#{
-#  "timestamp": "%s",
-#  "uuid": "%s",
-#  "deviceId": "%s",
-#  "model": "%s",
-#  "positionOffsetPS": %s,
-#  "antennaGain": %s
-#}""" % (timestamp, UUID, deviceId, model, positionOffset, antennaGain)
-
-    print(configIdMessage)
+    #print(configIdMessage)
 
     return configIdMessage
 
@@ -185,7 +176,7 @@ def prepareGPRRawMessage(scan_number, encoded_data):
 
     return GPRMessage
 
-def prepareDMIMessage(scan_number):
+def prepareDMIMessage(scan_number, distance):
 
     timestamp = prepareTimestamp()
 
@@ -193,8 +184,8 @@ def prepareDMIMessage(scan_number):
 {
   "timestamp": "%s",
   "binNumber": %s,
-  "distanceM": 0
-}"""  % (timestamp, scan_number)
+  "distanceM": %s
+}"""  % (timestamp, scan_number, distance)
     
     return DMIMessage
 
