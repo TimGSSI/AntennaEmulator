@@ -18,6 +18,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     global q
     global VERSION_NUMBER
     global ANTENNA_UUID
+    global POINT_FILE_POSITION
 
     global useNemaTalker
     global INCOMING_SCHEMA_VALIDATION
@@ -218,6 +219,8 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     NOW = pendulum.now()
     FIFTH_OF_SEC = NOW.add(seconds=0.2)
     FIFTH_OF_SEC = FIFTH_OF_SEC - NOW
+
+    POINT_FILE_POSITION = 0
 
     BATTERY_CAPACITY = 60
     BATTERY_MINUTES_LEFT = 60

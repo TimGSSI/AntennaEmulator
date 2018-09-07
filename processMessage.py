@@ -98,14 +98,11 @@ def processMessage(msg, client):
             #print("config_msg: " + str(config_msg))
 
         fullMessage = config_msg
-        #print("full message")
-        print(fullMessage)
         
         messageWithoutTimestamp = json.loads(fullMessage)
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
 
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
-        print("response message: " + str(responseMessage))
         
         client.publish(ig.CONFIG_STORAGE_ANTENNA_RESPONSE, responseMessage)
 
