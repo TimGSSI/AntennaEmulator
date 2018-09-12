@@ -84,6 +84,7 @@ def main(argv):
     ticksPerMeter = 1
     scansPerMeter = 1
     samples_per_scan = 0
+    depth_range = -1
     reset = 0
 
     while True:
@@ -104,10 +105,14 @@ def main(argv):
                 control_gpr_message_recieved = True
                 
             elif message['msg'] == "config_gpr":
+                if samples_per_scan != message['samples_per_scan']:
+                    ig.POINT_MODE_BYTE_COUNT = 0
+                    ig.POINT_MODE_SCAN_NUMBER = 0
                 samples_per_scan = message['samples_per_scan']
                 tx_rate = message['tx_rate']
                 scanRate = message['scanRate']
                 mode = message['mode']
+                time_range = message['antenna1']['timeRangeNs'] 
                 config_gpr_message_recieved = True
 
             elif message['msg'] == "config_dmi":
@@ -117,101 +122,24 @@ def main(argv):
                 binSize = message['binSize']
                 dmi_message_recieved = True
 
-        if mode == "swtick":
+        if mode == "swtick" or mode == "freerunsw":
             if config_gpr_message_recieved == True and control_gpr_message_recieved == True and dmi_message_recieved == True:    
-                if samples_per_scan == 512 and send_data == True:
+                if send_data == True:
+                    current_file = ig.FILE_LIST[str(samples_per_scan) + "_" + str(time_range)]
+                    #print("CURRENT FILE: " + current_file)
                     reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                elif samples_per_scan == 1024 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                elif samples_per_scan == 2048 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                elif samples_per_scan == 4096 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                elif samples_per_scan == 8192 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                elif samples_per_scan == 16384 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
+                    #reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, current_file)
                     mode = reset['mode']
                     samples_per_scan = reset['samples_per_scan']
                     control_gpr_message_recieved = False
 
-        if mode == "freerunsw":
-            if config_gpr_message_recieved == True and control_gpr_message_recieved == True and dmi_message_recieved == True:    
-                if samples_per_scan == 512 and send_data == True:
+        if mode == "freerun":
+            if config_gpr_message_recieved == True and control_gpr_message_recieved == True:# and dmi_message_recieved == True:    
+                if send_data == True:
+                    current_file = ig.FILE_LIST[str(samples_per_scan) + "_" + str(time_range)]
+                    #print("CURRENT FILE: " + current_file)
                     reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                elif samples_per_scan == 1024 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                elif samples_per_scan == 2048 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                elif samples_per_scan == 4096 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                elif samples_per_scan == 8192 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                elif samples_per_scan == 16384 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                
-        elif mode == "freerun":
-            if config_gpr_message_recieved == True and control_gpr_message_recieved == True:    
-                if samples_per_scan == 512 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                elif samples_per_scan == 1024 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                elif samples_per_scan == 2048 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                elif samples_per_scan == 4096 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                elif samples_per_scan == 8192 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
-                    control_gpr_message_recieved = False
-                elif samples_per_scan == 16384 and send_data == True:
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
+                    #reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, current_file)
                     mode = reset['mode']
                     samples_per_scan = reset['samples_per_scan']
                     control_gpr_message_recieved = False

@@ -18,7 +18,9 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     global q
     global VERSION_NUMBER
     global ANTENNA_UUID
-    global POINT_FILE_POSITION
+    global POINT_MODE_SCAN_NUMBER
+    global POINT_MODE_ENABLED
+    global POINT_MODE_BYTE_COUNT
 
     global useNemaTalker
     global INCOMING_SCHEMA_VALIDATION
@@ -83,11 +85,12 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     global TELEM_DMI_FORMATTED_SCHEMA
     global TELEM_GPS_NMEA_SCHEMA
     global STATUS_ID_SCHEMA
+    global FILE_LIST
 
     ANTENNA_UUID = str(uuid.uuid4())
     print("ANTENNA_UUID: " + str(ANTENNA_UUID) + "\n" )
 
-    VERSION_NUMBER = "1.002"
+    VERSION_NUMBER = "1.003"
     
     if incoming == True:
         INCOMING_SCHEMA_VALIDATION = True
@@ -220,11 +223,27 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     FIFTH_OF_SEC = NOW.add(seconds=0.2)
     FIFTH_OF_SEC = FIFTH_OF_SEC - NOW
 
-    POINT_FILE_POSITION = 0
+    POINT_MODE_SCAN_NUMBER = 0
+    POINT_MODE_ENABLED = False
+    POINT_MODE_BYTE_COUNT = 0
 
     BATTERY_CAPACITY = 60
     BATTERY_MINUTES_LEFT = 60
     BATTERY_TELEM_ENABLED = False
     GPS_TELEM_ENABLED = False
+
+    FILE_LIST = {}
+    samps = 512
+    file_number = 1
+    timerange = 64
+    for x in range(0, 5):
+        for y in range(0, 9):
+            combined = str(samps) + "_" + str(timerange)
+            FILE_LIST[combined] = "FILE_" + str(file_number) + ".DZT"
+            timerange *= 2
+            file_number += 1
+            if timerange == 32768:
+                timerange = 64
+        samps *= 2
 
     q = Queue() #initialize FIFO queue

@@ -287,11 +287,18 @@ def processMessage(msg, client):
         values['tx_rate'] = json_msg["txRateKHz"]
         values['scanRate'] = json_msg["scanRateHz"]
         values['mode'] = json_msg["scanControl"]
+        
+        if json_msg["enableDither"] == True:
+            ig.POINT_MODE_ENABLED = True
+        elif json_msg["enableDither"] == False:
+            ig.POINT_MODE_ENABLED = False
+            ig.POINT_MODE_SCAN_NUMBER = 0
+            ig.POINT_MODE_BYTE_COUNT = 0
+
         values['numberOfChannels'] = len(json_msg['channels'])
 
-        # this section collects configuration values for multiple antennas if there are mor than 1 
-    
-        antenna1 = {}
+        
+        antenna1 = {} # this section collects configuration values for multiple antennas
         antenna2 = {}
         antenna3 = {}
         antenna4 = {}
@@ -373,8 +380,8 @@ def processMessage(msg, client):
         #    print("positionOffsetNs is NOT evenly divisible by 0x2000")
         #    print(current_positionOffsetNs % 0x2000)
 
-        print("current_sampPerScan: " + str(current_sampPerScan))
-        print("current_timeRange: " + str(current_timeRange))
+        #print("current_sampPerScan: " + str(current_sampPerScan))
+        #print("current_timeRange: " + str(current_timeRange))
         
         if current_sampPerScan == current_timeRange:
             valid_timeRange = current_timeRange

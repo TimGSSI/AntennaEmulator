@@ -27,6 +27,7 @@ def surveyWheelTickSimulator(tickRange, forwards):
 
     return currentTick
 
+#def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, fileName):
 def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc):
     
     time_time = time.time
@@ -36,9 +37,21 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
     files_dir = "./test_data/"
     file = str(samples_per_scan) + "_samples.DZT"
     full_path = files_dir + file
-    #print("FULL PATH: " + full_path)
+    #full_path = files_dir + fileName
+
+    #print("TIMERANGE TEST:")
+    #print(ig.FILE_LIST["512_8192"])
+    #print(ig.FILE_LIST["2048_1024"])
+    #print(ig.FILE_LIST["4096_4096"])
+    #print(ig.FILE_LIST["8192_16384"])
+    
+    #print("FULL FILE PATH: " + full_path)
 
     size = os.path.getsize(files_dir + file)
+
+    #size = os.path.getsize(full_path) # for 
+
+    #print("total file size in bytes: " + str(size))
     data_file = open(files_dir + file, 'rb')
     
     lastBatteryCheck = pendulum.parse(mp.prepareTimestamp())
@@ -77,6 +90,11 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
 
     initial_samples = samples_per_scan
     initial_scanRate = scanRate
+
+    if ig.POINT_MODE_ENABLED == False:
+        byte_count = 0
+    else:
+        byte_count = ig.POINT_MODE_BYTE_COUNT
     
     scan_count = 0
     scanMessagesSent = 0
@@ -85,18 +103,14 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
 
     nextBackup = 300
 
-    #tick_high_end = int(binSize * 0.90) # these make it faster to check if the distance calculations are accurate
-    #tick_low_end = int(binSize * 0.40)
     tick_high_end = 250
     tick_low_end = 150
-    #print("tick_low_end: " + str(tick_low_end))
-    #print("tick_high_end: " + str(tick_high_end))
 
     tickRange = [tick_low_end, tick_high_end]
     forwards = True
-
-    byte_count = 0
+    
     header_skipped = False
+    skip_to_file_position = False
 
     lastScancountCheck = 0
 
@@ -135,7 +149,9 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                     byte_count = 0
                     scan_count = 0
                 elif samples_per_scan != initial_samples:
-
+                    
+                    ig.POINT_MODE_SCAN_NUMBER = 0
+                    ig.POINT_MODE_BYTE_COUNT = 0
                     data_file.close()
                     time.sleep(0.2)
 
@@ -281,32 +297,62 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                         print("scan_count: " + str(scan_count) + "  totalTickCount: " + str(totalTickCount))
 
             elif mode == "freerun":
-                if (time_time() - start) > period:
-                    data_chunk = data_file.read(samples_per_scan * 4) # unpacks binary data to read as 4-byte int
-                    data_chunk_size = samples_per_scan * 4
+                if ig.POINT_MODE_ENABLED == False:
+                    if (time_time() - start) > period:
+                        data_chunk = data_file.read(samples_per_scan * 4) # unpacks binary data to read as 4-byte int
+                        data_chunk_size = samples_per_scan * 4
             
-                    # unpacks the first 4 bytes which contain current scan number (sanity check)
-                    data = [data_chunk[0], data_chunk[1], data_chunk[2], data_chunk[3]]
-                    data = struct.unpack("I", bytearray(data))
-                    data = data[0]
+                        # unpacks the first 4 bytes which contain current scan number (sanity check)
+                        data = [data_chunk[0], data_chunk[1], data_chunk[2], data_chunk[3]]
+                        data = struct.unpack("I", bytearray(data))
+                        data = data[0]
 
-                    byte_count += len(data_chunk) # running byte count
-                    encoded_data = base64.b64encode(data_chunk)
-                    encoded_data = encoded_data.decode("utf-8")
+                        byte_count += len(data_chunk) # running byte count
+                        encoded_data = base64.b64encode(data_chunk)
+                        encoded_data = encoded_data.decode("utf-8")
 
-                    JSON_GPR = mp.prepareGPRFreerunMessage(scan_count, encoded_data)
-                    #print(JSON_GPR)
-                    json_validate = json.loads(JSON_GPR)
+                        JSON_GPR = mp.prepareGPRFreerunMessage(scan_count, encoded_data)
+                        #print(JSON_GPR)
+                        json_validate = json.loads(JSON_GPR)
                     
-                    if ig.OUTGOING_SCHEMA_VALIDATION == True:           
-                        jsonschema.validate(json_validate, ig.TELEM_GPR_RAW_SCHEMA)
+                        if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                            jsonschema.validate(json_validate, ig.TELEM_GPR_RAW_SCHEMA)
 
-                    client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
-                    start += period
-                    scan_count+=1
+                        client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
+                        start += period
+                        scan_count+=1
 
-                    if scan_count % 50 == 0 and scan_count != 0:
-                        print("scan_count: " + str(scan_count))
+                        if scan_count % 50 == 0 and scan_count != 0:
+                            print("scan_count: " + str(scan_count))
+                else: # engeges if point mode is enabled
+                    if skip_to_file_position == False:
+                        data_file.seek((samples_per_scan * 4 * (ig.POINT_MODE_SCAN_NUMBER)), 1)
+
+                        data_chunk = data_file.read(samples_per_scan * 4) # unpacks binary data to read as 4-byte int
+                        data_chunk_size = samples_per_scan * 4
+                        byte_count += len(data_chunk) # running byte count
+                        ig.POINT_MODE_BYTE_COUNT += len(data_chunk)
+            
+                        data = [data_chunk[0], data_chunk[1], data_chunk[2], data_chunk[3]]
+                        data = struct.unpack("I", bytearray(data))
+                        data = data[0]
+
+                        encoded_data = base64.b64encode(data_chunk)
+                        encoded_data = encoded_data.decode("utf-8")
+
+                        skip_to_file_position = True
+                    
+                    if (time_time() - start) > period:                           
+                        JSON_GPR = mp.prepareGPRFreerunMessage(scan_count, encoded_data)
+                        #print(JSON_GPR)
+                        json_validate = json.loads(JSON_GPR)
+                    
+                        if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                            jsonschema.validate(json_validate, ig.TELEM_GPR_RAW_SCHEMA)
+
+                        client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
+                        start += period
+                        scan_count+=1
    
         if GPS_time > ig.FIFTH_OF_SEC and ig.GPS_TELEM_ENABLED == True:            
             
@@ -356,16 +402,30 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
             client.publish(ig.BATTERY_TOPIC, JSON_battery)
             lastBatteryCheck = pendulum.parse(mp.prepareTimestamp())
         
-        if byte_count == size - 131072:  # when end of file is reached - 131072 is the size of the 128K file header
-
-            byte_count = 0
-            data_file.close()
-            data_file = open(files_dir + file, 'rb')
-            header_skipped = False
-            skip_forward = False
-    
+        if ig.POINT_MODE_ENABLED == False:
+            if byte_count == size - 131072:  # when end of file is reached - 131072 is the size of the 128K file header
+                byte_count = 0
+                ig.POINT_MODE_BYTE_COUNT = samples_per_scan * 4
+                ig.POINT_MODE_SCAN_NUMBER = 0
+                data_file.close()
+                data_file = open(files_dir + file, 'rb')
+                header_skipped = False
+                skip_forward = False
+                skip_to_file_position = False
+        else:
+            if data_file.tell() == size:
+                byte_count = 0
+                ig.POINT_MODE_BYTE_COUNT = 0
+                ig.POINT_MODE_SCAN_NUMBER = 0
+                data_file.close()
+                data_file = open(files_dir + file, 'rb')
+                header_skipped = False
+                skip_forward = False
+                skip_to_file_position = False
+                
         if send_data == False:
             data_file.close()
+            ig.POINT_MODE_SCAN_NUMBER += 1
             JSON_GPR = mp.prepareGPREOFMessage()
             if scan_count > 1:
                 client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR) # if last scan of file, publish message with scan# -1 and empty data field
