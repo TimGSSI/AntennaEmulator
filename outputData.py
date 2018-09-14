@@ -27,32 +27,17 @@ def surveyWheelTickSimulator(tickRange, forwards):
 
     return currentTick
 
-#def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, fileName):
-def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc):
+def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, fileName):
+#def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc):
     
     time_time = time.time
     start = time_time()
     period = 1.0 / scanRate
 
     files_dir = "./test_data/"
-    file = str(samples_per_scan) + "_samples.DZT"
-    full_path = files_dir + file
-    #full_path = files_dir + fileName
-
-    #print("TIMERANGE TEST:")
-    #print(ig.FILE_LIST["512_8192"])
-    #print(ig.FILE_LIST["2048_1024"])
-    #print(ig.FILE_LIST["4096_4096"])
-    #print(ig.FILE_LIST["8192_16384"])
-    
-    #print("FULL FILE PATH: " + full_path)
-
-    size = os.path.getsize(files_dir + file)
-
-    #size = os.path.getsize(full_path) # for 
-
-    #print("total file size in bytes: " + str(size))
-    data_file = open(files_dir + file, 'rb')
+    full_path = files_dir + fileName
+    size = os.path.getsize(full_path) # for 
+    data_file = open(full_path, 'rb')
     
     lastBatteryCheck = pendulum.parse(mp.prepareTimestamp())
     lastGPSCheck = pendulum.parse(mp.prepareTimestamp())
@@ -101,18 +86,14 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
     totalTickCount = 0
     lastTickCount = 0
 
-    nextBackup = 300
-
     tick_high_end = 250
     tick_low_end = 150
-
     tickRange = [tick_low_end, tick_high_end]
     forwards = True
+    nextBackup = 300
     
-    header_skipped = False
-    skip_to_file_position = False
-
-    lastScancountCheck = 0
+    header_skipped = False # flag to skip file header first loop after file open
+    skip_to_file_position = False #  
 
     while True:
 
@@ -128,45 +109,43 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
 
         if not ig.q.empty(): 
             msg = ig.q.get()
+            if msg.topic == "control/gps/state":
+                print("\n")
             print("message topic: " + str(msg.topic) + "\nmessage payload: " + str(msg.payload) + "\n===============================\n")
 
             message = pm.processMessage(msg, client)
 
             if message['msg'] == "control_GPR_msg":
                 send_data = message['send_data']                
-
             elif message['msg'] == "config_gpr":
                 samples_per_scan = message['samples_per_scan']
                 tx_rate = message['tx_rate']
                 scanRate = message['scanRate']
                 mode = message['mode']
+                fileName = message['currentFile']
+                print("currentFile from outputData: " + fileName)
 
                 if samples_per_scan == initial_samples:
                     data_file.close()
                     time.sleep(0.2)
-                    data_file = open(files_dir + file, 'rb')
+                    data_file = open(files_dir + fileName, 'rb')
                     header_skipped = False
                     byte_count = 0
                     scan_count = 0
                 elif samples_per_scan != initial_samples:
-                    
                     ig.POINT_MODE_SCAN_NUMBER = 0
                     ig.POINT_MODE_BYTE_COUNT = 0
                     data_file.close()
                     time.sleep(0.2)
-
-                    file = str(samples_per_scan) + "_samples.DZT"
-                    full_path = files_dir + file
+                    full_path = files_dir + fileName
                     header_skipped = False
                     byte_count = 0
                     scan_count = 0
                     initial_samples = samples_per_scan
-
                     size = os.path.getsize(full_path)
                     data_file = open(full_path, 'rb')
                     
             elif message['msg'] == "config_dmi":
-
                 ticksPerMeter = message['ticksPerMeter']
                 ticksPerMeter = abs(ticksPerMeter)
                 scansPerMeter = message['scansPerMeter']
@@ -324,7 +303,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
 
                         if scan_count % 50 == 0 and scan_count != 0:
                             print("scan_count: " + str(scan_count))
-                else: # engeges if point mode is enabled
+                else: # if config/gpr enableDither parameter == true 
                     if skip_to_file_position == False:
                         data_file.seek((samples_per_scan * 4 * (ig.POINT_MODE_SCAN_NUMBER)), 1)
 
@@ -408,7 +387,8 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                 ig.POINT_MODE_BYTE_COUNT = samples_per_scan * 4
                 ig.POINT_MODE_SCAN_NUMBER = 0
                 data_file.close()
-                data_file = open(files_dir + file, 'rb')
+                #data_file = open(files_dir + file, 'rb')
+                data_file = open(full_path, 'rb')
                 header_skipped = False
                 skip_forward = False
                 skip_to_file_position = False
@@ -418,7 +398,8 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                 ig.POINT_MODE_BYTE_COUNT = 0
                 ig.POINT_MODE_SCAN_NUMBER = 0
                 data_file.close()
-                data_file = open(files_dir + file, 'rb')
+                #data_file = open(files_dir + file, 'rb')
+                data_file = open(full_path, 'rb')
                 header_skipped = False
                 skip_forward = False
                 skip_to_file_position = False

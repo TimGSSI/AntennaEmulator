@@ -114,6 +114,7 @@ def main(argv):
                 mode = message['mode']
                 time_range = message['antenna1']['timeRangeNs'] 
                 config_gpr_message_recieved = True
+                fileName = message['currentFile']
 
             elif message['msg'] == "config_dmi":
                 ticksPerMeter = message['ticksPerMeter']
@@ -126,9 +127,7 @@ def main(argv):
             if config_gpr_message_recieved == True and control_gpr_message_recieved == True and dmi_message_recieved == True:    
                 if send_data == True:
                     current_file = ig.FILE_LIST[str(samples_per_scan) + "_" + str(time_range)]
-                    #print("CURRENT FILE: " + current_file)
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    #reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, current_file)
+                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, current_file)
                     mode = reset['mode']
                     samples_per_scan = reset['samples_per_scan']
                     control_gpr_message_recieved = False
@@ -137,9 +136,7 @@ def main(argv):
             if config_gpr_message_recieved == True and control_gpr_message_recieved == True:# and dmi_message_recieved == True:    
                 if send_data == True:
                     current_file = ig.FILE_LIST[str(samples_per_scan) + "_" + str(time_range)]
-                    #print("CURRENT FILE: " + current_file)
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc)
-                    #reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, current_file)
+                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, current_file)
                     mode = reset['mode']
                     samples_per_scan = reset['samples_per_scan']
                     control_gpr_message_recieved = False

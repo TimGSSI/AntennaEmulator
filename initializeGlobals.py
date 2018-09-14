@@ -4,6 +4,7 @@ import jsonschema
 import uuid
 from queue import Queue
 
+# function loads schema files as global JSON objects for fast checking 
 def getJSONSchemaObject(file_name):
     validation_directory = "./schema_validation/"
     validation_file = validation_directory + file_name
@@ -68,7 +69,6 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     global GPS_TELEM_ENABLED
 
     # schema validation objects
-    #global INTERNAL_SWAGGER_SCHEMA
     global GENERAL_CONFIG_SCHEMA
     global CONFIG_GPR_SCHEMA
     global CONFIG_GPS_SCHEMA
@@ -86,11 +86,13 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     global TELEM_GPS_NMEA_SCHEMA
     global STATUS_ID_SCHEMA
     global FILE_LIST
+    global FILE_LIST_PARSED
 
     ANTENNA_UUID = str(uuid.uuid4())
-    print("ANTENNA_UUID: " + str(ANTENNA_UUID) + "\n" )
+    VERSION_NUMBER = "1.004"
 
-    VERSION_NUMBER = "1.003"
+    print("Low Frequency Antenna Emulator Version: " + str(VERSION_NUMBER))
+    print("ANTENNA_UUID: " + str(ANTENNA_UUID) + "\n" )
     
     if incoming == True:
         INCOMING_SCHEMA_VALIDATION = True
@@ -232,18 +234,42 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     BATTERY_TELEM_ENABLED = False
     GPS_TELEM_ENABLED = False
 
+    #FILE_LIST = {}
+    #samps = 512
+    #file_number = 1
+    #timerange = 64
+    #print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    #for x in range(0, 5):
+    #    for y in range(0, 9):
+    #        combined = str(samps) + "_" + str(timerange)
+    #        print(combined)
+    #        FILE_LIST[combined] = "FILE_" + str(file_number) + ".DZT"
+    #        print(FILE_LIST[combined])
+    #        timerange *= 2
+    #        file_number += 1
+    #        if timerange == 32768:
+    #            timerange = 64
+    #    samps *= 2
+    #print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+
     FILE_LIST = {}
     samps = 512
     file_number = 1
+    original_timerange = 64
     timerange = 64
+    #print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    valid_timeranges = [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
     for x in range(0, 5):
-        for y in range(0, 9):
-            combined = str(samps) + "_" + str(timerange)
+        index = x
+        for y in range(0, 5):
+            combined = str(samps) + "_" + str(valid_timeranges[index])
+            index += 1
+    #        print(combined)
             FILE_LIST[combined] = "FILE_" + str(file_number) + ".DZT"
-            timerange *= 2
+    #        print(FILE_LIST_PARSED[combined])
+            #timerange *= 2
             file_number += 1
-            if timerange == 32768:
-                timerange = 64
         samps *= 2
+    #print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
 
     q = Queue() #initialize FIFO queue

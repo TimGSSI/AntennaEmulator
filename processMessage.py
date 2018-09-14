@@ -19,7 +19,6 @@ def processMessage(msg, client):
     if msg.topic == ig.CONFIG_STORAGE_ANTENNA:
 
         json_msg = json.loads(msg.payload.decode('utf-8'))
-                
         config_msg = ""
 
         if len(json_msg) == 0:        
@@ -95,7 +94,6 @@ def processMessage(msg, client):
                     print(current_survey)
 
             config_msg = mp.prepareConfigIdMessage(current_dev_id, current_ant_model, current_gain, current_pos_off, current_survey)
-            #print("config_msg: " + str(config_msg))
 
         fullMessage = config_msg
         
@@ -118,14 +116,12 @@ def processMessage(msg, client):
         else:
             send_data = False    
 
+        # response message
         fullMessage = msg.payload.decode("utf-8")
         messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
-
         del messageWithoutTimestamp['timestamp']
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
-
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
-
         client.publish(ig.CONTROL_GPR_STATE_RESPONSE, responseMessage)
 
         values = {'msg':'control_GPR_msg'}
@@ -147,12 +143,9 @@ def processMessage(msg, client):
 
         fullMessage = msg.payload.decode("utf-8")
         messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
-
         del messageWithoutTimestamp['timestamp']
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
-        
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
-
         client.publish(ig.CONTROL_DMI_STATE_RESPONSE, responseMessage)
 
         values = {'msg':'control_DMI_msg'}
@@ -172,20 +165,19 @@ def processMessage(msg, client):
         else:
             ig.GPS_TELEM_ENABLED = False
 
+        # response message block
         fullMessage = msg.payload.decode("utf-8")
         messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
-
         del messageWithoutTimestamp['timestamp']
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
-
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
-
         client.publish(ig.CONTROL_GPS_STATE_RESPONSE, responseMessage)
+        
         values = {'msg':'control_gps_msg'}
 
         return values
 
-    if msg.topic == ig.CONTROL_BATTERY_STATE:
+    if msg.topic == ig.CONTROL_BATTERY_STATE:  # this message does not get sent to me yet
 
         json_msg = json.loads(msg.payload.decode('utf-8'))
 
@@ -197,24 +189,19 @@ def processMessage(msg, client):
         else:
             ig.BATTERY_TELEM_ENABLED = False
 
+        # response message block
         fullMessage = msg.payload.decode("utf-8")
         messageWithoutTimestamp = stripDateFromJSONObject(incomingMessage)
-
         del messageWithoutTimestamp['timestamp']
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
-
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
-
         client.publish(ig.CONTROL_BATTERY_STATE_RESPONSE, responseMessage)
         
         values = {'msg':'control_battery_msg'}
-        # this topic does nothing right now because this message does not exist yet
 
         return values
 
-    if msg.topic == ig.CONFIG_GPS_TOPIC:
-
-        # this message does not get sent to me yet
+    if msg.topic == ig.CONFIG_GPS_TOPIC:  # this message does not get sent to me yet
 
         json_msg = json.loads(msg.payload.decode('utf-8'))  
 
@@ -241,14 +228,12 @@ def processMessage(msg, client):
         values['scansPerMeter'] = json_msg["scansPerMeter"]
         values['binSize'] = binSize
 
+        # response message block
         fullMessage = msg.payload.decode("utf-8")
         messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
-
         del messageWithoutTimestamp['timestamp']
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
-
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
-
         client.publish(ig.CONFIG_DMI_0_RESPONSE, responseMessage)
 
         return values
@@ -263,14 +248,12 @@ def processMessage(msg, client):
         values = {'msg':'config_dmi_0_output_formatted'}
         values['publish'] = json_msg["publish"]
 
+        # response message block
         fullMessage = msg.payload.decode("utf-8")
         messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
-
         del messageWithoutTimestamp['timestamp']
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
-
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
-
         client.publish(ig.CONFIG_DMI_0__OUTPUT_FORMATTED_RESPONSE, responseMessage)
 
         return values
@@ -296,7 +279,6 @@ def processMessage(msg, client):
             ig.POINT_MODE_BYTE_COUNT = 0
 
         values['numberOfChannels'] = len(json_msg['channels'])
-
         
         antenna1 = {} # this section collects configuration values for multiple antennas
         antenna2 = {}
@@ -356,8 +338,6 @@ def processMessage(msg, client):
             antenna4['positionOffsetPs'] = json_msg['channels'][3]['positionOffsetPs']
             antenna4['timeRangeNs'] = json_msg['channels'][3]['timeRangeNs']
             values['antenna4'] = antenna4
-
-        #incomingMessage = msg.payload.decode("utf-8")
         
         fullMessage = msg.payload.decode("utf-8")
         messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
@@ -366,6 +346,9 @@ def processMessage(msg, client):
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
 
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
+
+        file_dictionary_position = str(json_msg["samples"]) + "_" + str(json_msg['channels'][0]['timeRangeNs'])
+        values['currentFile'] = ig.FILE_LIST[file_dictionary_position]
         
         current_sampPerScan = json_msg["samples"]
         current_timeRange = json_msg['channels'][0]['timeRangeNs']
@@ -383,6 +366,7 @@ def processMessage(msg, client):
         #print("current_sampPerScan: " + str(current_sampPerScan))
         #print("current_timeRange: " + str(current_timeRange))
         
+        # this section ensures that selected samples/scan and timerange pairing is legal 
         if current_sampPerScan == current_timeRange:
             valid_timeRange = current_timeRange
         elif (current_sampPerScan * 2) == current_timeRange:
@@ -396,6 +380,7 @@ def processMessage(msg, client):
         else:
             raise ValueError('timeRangeNs value does not fall within acceptable range.  Current timeRangeNs value: ' + struct(current_timeRange))
             # publish response timerange error message to UI here 
+            # need to catch Jeremy's error message and mimic the format, it is not published in any documentation
         
         if valid_timeRange != 0:
             client.publish(ig.CONFIG_GPR_RESPONSE, responseMessage)
