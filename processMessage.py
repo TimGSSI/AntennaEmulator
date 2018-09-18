@@ -101,7 +101,6 @@ def processMessage(msg, client):
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
 
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
-        
         client.publish(ig.CONFIG_STORAGE_ANTENNA_RESPONSE, responseMessage)
 
     if msg.topic == ig.CONTROL_GPR_STATE_TOPIC:

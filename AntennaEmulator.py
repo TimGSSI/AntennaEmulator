@@ -34,8 +34,9 @@ def main(argv):
     nemaTalker = False
     incoming_schema_validation = True
     outgoing_schema_validation = True
+    loopData = True
 
-    ig.initialize_globals(test_topics, nemaTalker, incoming_schema_validation, outgoing_schema_validation)
+    ig.initialize_globals(test_topics, nemaTalker, incoming_schema_validation, outgoing_schema_validation, loopData)
 
     broker="localhost"
 
@@ -165,9 +166,15 @@ def main(argv):
             
             lastGPSCheck = pendulum.parse(mp.prepareTimestamp())
 
-        if batt_time > ig.ONE_MIN: #and ig.BATTERY_TELEM_ENABLED == True:
+        #if batt_time > ig.ONE_MIN: #and ig.BATTERY_TELEM_ENABLED == True:
+        if batt_time > ig.FIVE_SEC: #and ig.BATTERY_TELEM_ENABLED == True:
             ig.BATTERY_CAPACITY -= 5
             ig.BATTERY_MINUTES_LEFT -= 5
+
+            if ig.BATTERY_CAPACITY == 0:
+                ig.BATTERY_CAPACITY = 100
+            if ig.BATTERY_MINUTES_LEFT == 0:
+                ig.BATTERY_MINUTES_LEFT = 360
 
             JSON_battery = mp.prepareBatteryMessage(ig.BATTERY_CAPACITY, ig.BATTERY_MINUTES_LEFT) 
 

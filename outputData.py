@@ -30,6 +30,8 @@ def surveyWheelTickSimulator(tickRange, forwards):
 def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, fileName):
 #def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc):
     
+    print("current file:" + fileName)
+
     time_time = time.time
     start = time_time()
     period = 1.0 / scanRate
@@ -93,7 +95,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
     nextBackup = 300
     
     header_skipped = False # flag to skip file header first loop after file open
-    skip_to_file_position = False #  
+    skip_to_file_position = False # in point mode, skips to stored file position 
 
     while True:
 
@@ -159,6 +161,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
 
         else:
             if mode == "swtick":
+                
                 if (time_time() - start) > period:
 
                     start += period
@@ -173,8 +176,6 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
 
                     if currentBinNumber > newBinNumber:
 
-                        newBinNumber = lastBinNumber = currentBinNumber
-
                         if currentBinNumber % 50 == 0 and currentBinNumber != 0:
                             print("currentBinNumber: " + str(currentBinNumber))
                         
@@ -188,10 +189,9 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                         byte_count += len(data_chunk) # running byte count
                         encoded_data = base64.b64encode(data_chunk)
                         encoded_data = encoded_data.decode("utf-8")
-                    
+                        
                         JSON_GPR = mp.prepareGPRSurveyMessage(scan_count, encoded_data, distance)
                         #print(JSON_GPR)
-
                         json_validate = json.loads(JSON_GPR)
                     
                         if ig.OUTGOING_SCHEMA_VALIDATION == True:           
@@ -199,9 +199,11 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
 
                         client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
                         scan_count+=1
+                        newBinNumber = lastBinNumber = currentBinNumber
                         
                     elif currentBinNumber <= newBinNumber and forwards == False:
                         if currentBinNumber < lastBinNumber:
+                            
                             if currentBinNumber % 50 == 0 and currentBinNumber != 0:
                                 print("currentBinNumber: " + str(currentBinNumber))
                             scan_count-=1
@@ -212,12 +214,17 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                             if ig.OUTGOING_SCHEMA_VALIDATION == True:           
                                 jsonschema.validate(json_validate, ig.TELEM_DMI_FORMATTED_SCHEMA)
 
-                            client.publish(ig.DMI_TOPIC, roll_back)
-                            #print(roll_back)
-                            time.sleep(0.01)
-                            lastBinNumber = currentBinNumber
+                            if currentBinNumber != (nextBackup -1):
+                                client.publish(ig.DMI_TOPIC, roll_back)
+                                #print(roll_back)
+                                time.sleep(0.01)
+                                lastBinNumber = currentBinNumber
+                            else:
+                                lastBinNumber = currentBinNumber
+
                     elif currentBinNumber <= newBinNumber and forwards == True:
                         if currentBinNumber > lastBinNumber:
+                            
                             if currentBinNumber % 50 == 0 and currentBinNumber != 0:
                                 print("currentBinNumber: " + str(currentBinNumber))
                             scan_count+=1
@@ -228,11 +235,14 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                             if ig.OUTGOING_SCHEMA_VALIDATION == True:           
                                 jsonschema.validate(json_validate, ig.TELEM_DMI_FORMATTED_SCHEMA)
 
-                            client.publish(ig.DMI_TOPIC, roll_back)
-                            #print(roll_back)
-                            time.sleep(0.01)
-                            lastBinNumber = currentBinNumber
-
+                            if currentBinNumber == (nextBackup - 300):
+                                lastBinNumber = currentBinNumber
+                            else:
+                                client.publish(ig.DMI_TOPIC, roll_back)
+                                #print(roll_back)
+                                time.sleep(0.01)
+                                lastBinNumber = currentBinNumber
+                    
                     if currentBinNumber >= nextBackup:
                         forwards = False
 
@@ -289,7 +299,6 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                         byte_count += len(data_chunk) # running byte count
                         encoded_data = base64.b64encode(data_chunk)
                         encoded_data = encoded_data.decode("utf-8")
-
                         JSON_GPR = mp.prepareGPRFreerunMessage(scan_count, encoded_data)
                         #print(JSON_GPR)
                         json_validate = json.loads(JSON_GPR)
@@ -366,10 +375,16 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
             
             lastGPSCheck = pendulum.parse(mp.prepareTimestamp())            
         
-        if batt_time > ig.ONE_MIN: #and ig.BATTERY_TELEM_ENABLED == True:
+        #if batt_time > ig.ONE_MIN: #and ig.BATTERY_TELEM_ENABLED == True:
+        if batt_time > ig.FIVE_SEC: #and ig.BATTERY_TELEM_ENABLED == True:
 
             ig.BATTERY_CAPACITY -= 5
             ig.BATTERY_MINUTES_LEFT -= 5 
+
+            if ig.BATTERY_CAPACITY == 0:
+                ig.BATTERY_CAPACITY = 100
+            if ig.BATTERY_MINUTES_LEFT == 0:
+                ig.BATTERY_MINUTES_LEFT = 360
    
             JSON_battery = mp.prepareBatteryMessage(ig.BATTERY_CAPACITY, ig.BATTERY_MINUTES_LEFT) 
             
@@ -382,23 +397,25 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
             lastBatteryCheck = pendulum.parse(mp.prepareTimestamp())
         
         if ig.POINT_MODE_ENABLED == False:
-            if byte_count == size - 131072:  # when end of file is reached - 131072 is the size of the 128K file header
-                byte_count = 0
-                ig.POINT_MODE_BYTE_COUNT = samples_per_scan * 4
-                ig.POINT_MODE_SCAN_NUMBER = 0
-                data_file.close()
-                #data_file = open(files_dir + file, 'rb')
-                data_file = open(full_path, 'rb')
-                header_skipped = False
-                skip_forward = False
-                skip_to_file_position = False
+            if ig.LOOP_DATA == True:
+                if byte_count == size - 131072:  # when end of file is reached - 131072 is the size of the 128K file header
+                    byte_count = 0
+                    ig.POINT_MODE_BYTE_COUNT = samples_per_scan * 4
+                    ig.POINT_MODE_SCAN_NUMBER = 0
+                    data_file.close()
+                    data_file = open(full_path, 'rb')
+                    header_skipped = False
+                    skip_forward = False
+                    skip_to_file_position = False
+            else:
+                if byte_count == size - 131072:
+                    send_data = False
         else:
             if data_file.tell() == size:
                 byte_count = 0
                 ig.POINT_MODE_BYTE_COUNT = 0
                 ig.POINT_MODE_SCAN_NUMBER = 0
                 data_file.close()
-                #data_file = open(files_dir + file, 'rb')
                 data_file = open(full_path, 'rb')
                 header_skipped = False
                 skip_forward = False

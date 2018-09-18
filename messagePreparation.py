@@ -34,9 +34,10 @@ def prepareBatteryMessage(capacity, battery_time):
 {
   "timestamp": "%s",
   "temp": 0,
+  "capacity": %s,
   "voltageNow": 0,
   "timeToEmptyAvg": %s
-}""" % (timestamp, battery_time)
+}""" % (timestamp, capacity, battery_time)
 
     #print(battMessage)
 

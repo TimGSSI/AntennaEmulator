@@ -14,7 +14,7 @@ def getJSONSchemaObject(file_name):
     schema_object = json.loads(schema)
     return schema_object
 
-def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
+def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData):
 
     global q
     global VERSION_NUMBER
@@ -26,6 +26,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     global useNemaTalker
     global INCOMING_SCHEMA_VALIDATION
     global OUTGOING_SCHEMA_VALIDATION
+    global LOOP_DATA
 
     global GPS_NMEA_TOPIC
     global BATTERY_TOPIC
@@ -60,6 +61,8 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     global FIFTH_OF_SEC
     global TENTH_SEC
     global ONE_SEC
+    global FIVE_SEC
+    global TEN_SEC
     global ONE_MIN
 
     global BATTERY_CAPACITY
@@ -89,7 +92,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     global FILE_LIST_PARSED
 
     ANTENNA_UUID = str(uuid.uuid4())
-    VERSION_NUMBER = "1.004"
+    VERSION_NUMBER = "1.006"
 
     print("Low Frequency Antenna Emulator Version: " + str(VERSION_NUMBER))
     print("ANTENNA_UUID: " + str(ANTENNA_UUID) + "\n" )
@@ -209,6 +212,11 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     else:
         useNemaTalker = False
 
+    if loopData == True:
+        LOOP_DATA = True
+    else:
+        LOOP_DATA = False
+
     NOW = pendulum.now()
     ONE_MIN = NOW.add(minutes=1)
     ONE_MIN = ONE_MIN - NOW
@@ -216,6 +224,14 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     NOW = pendulum.now()
     ONE_SEC = NOW.add(seconds=1)
     ONE_SEC = ONE_SEC - NOW
+
+    NOW = pendulum.now()
+    FIVE_SEC = NOW.add(seconds=5)
+    FIVE_SEC = FIVE_SEC - NOW
+
+    NOW = pendulum.now()
+    TEN_SEC = NOW.add(seconds=10)
+    TEN_SEC = TEN_SEC - NOW
 
     NOW = pendulum.now()
     TENTH_SEC = NOW.add(seconds=0.1)
@@ -229,47 +245,26 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing):
     POINT_MODE_ENABLED = False
     POINT_MODE_BYTE_COUNT = 0
 
-    BATTERY_CAPACITY = 60
-    BATTERY_MINUTES_LEFT = 60
+    BATTERY_CAPACITY = 100
+    BATTERY_MINUTES_LEFT = 360
     BATTERY_TELEM_ENABLED = False
     GPS_TELEM_ENABLED = False
 
-    #FILE_LIST = {}
-    #samps = 512
-    #file_number = 1
-    #timerange = 64
-    #print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-    #for x in range(0, 5):
-    #    for y in range(0, 9):
-    #        combined = str(samps) + "_" + str(timerange)
-    #        print(combined)
-    #        FILE_LIST[combined] = "FILE_" + str(file_number) + ".DZT"
-    #        print(FILE_LIST[combined])
-    #        timerange *= 2
-    #        file_number += 1
-    #        if timerange == 32768:
-    #            timerange = 64
-    #    samps *= 2
-    #print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-
+    # creates a dictionary pairing all data files with valid timerange/sampPerScan combinations 
+    # The dictionary key is the currently selected samples underscore timerange, example: "512_256"
     FILE_LIST = {}
     samps = 512
     file_number = 1
     original_timerange = 64
     timerange = 64
-    #print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
     valid_timeranges = [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
     for x in range(0, 5):
         index = x
         for y in range(0, 5):
             combined = str(samps) + "_" + str(valid_timeranges[index])
             index += 1
-    #        print(combined)
             FILE_LIST[combined] = "FILE_" + str(file_number) + ".DZT"
-    #        print(FILE_LIST_PARSED[combined])
-            #timerange *= 2
             file_number += 1
         samps *= 2
-    #print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
 
     q = Queue() #initialize FIFO queue
