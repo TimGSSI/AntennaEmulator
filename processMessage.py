@@ -353,17 +353,12 @@ def processMessage(msg, client):
         current_timeRange = json_msg['channels'][0]['timeRangeNs']
         current_positionOffsetNs = json_msg['channels'][0]['positionOffsetPs']
         valid_timeRange = 0
+        valid_positionOffsetNs = 0
         
-        #print("current_positionOffsetNs: " + str(current_positionOffsetNs))
-        #if current_positionOffsetNs % 0x2000 == 0:
-        #    print("positionOffsetNs is evenly divisible by 0x2000")
-        #    print(current_positionOffsetNs % 0x2000)
-        #else:
-        #    print("positionOffsetNs is NOT evenly divisible by 0x2000")
-        #    print(current_positionOffsetNs % 0x2000)
-
-        #print("current_sampPerScan: " + str(current_sampPerScan))
-        #print("current_timeRange: " + str(current_timeRange))
+        if current_positionOffsetNs % 8000 == 0:
+            valid_positionOffsetNs = current_positionOffsetNs
+        else:
+            raise ValueError('positionOffsetNs value is not evenly divisible by 8000.  Current positionOffsetNs value: ' + struct(positionOffsetNs))
         
         # this section ensures that selected samples/scan and timerange pairing is legal 
         if current_sampPerScan == current_timeRange:

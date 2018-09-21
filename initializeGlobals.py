@@ -14,19 +14,22 @@ def getJSONSchemaObject(file_name):
     schema_object = json.loads(schema)
     return schema_object
 
-def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData):
+# this function initializes variables that are shared between multiple files
+def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, debugOutput):
 
-    global q
+    global Q
+
     global VERSION_NUMBER
     global ANTENNA_UUID
     global POINT_MODE_SCAN_NUMBER
     global POINT_MODE_ENABLED
     global POINT_MODE_BYTE_COUNT
 
-    global useNemaTalker
+    global USE_NEMA_TALKER
     global INCOMING_SCHEMA_VALIDATION
     global OUTGOING_SCHEMA_VALIDATION
     global LOOP_DATA
+    global DEBUG_OUTPUT
 
     global GPS_NMEA_TOPIC
     global BATTERY_TOPIC
@@ -59,11 +62,15 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData):
     global CONFIG_STORAGE_ANTENNA_RESPONSE
 
     global FIFTH_OF_SEC
-    global TENTH_SEC
+    global TENTH_OF_SEC
     global ONE_SEC
     global FIVE_SEC
     global TEN_SEC
+    global THIRTY_SEC
     global ONE_MIN
+
+    global SCANS_BEFORE_BACKUP
+    global SCANS_TO_BACKUP
 
     global BATTERY_CAPACITY
     global BATTERY_MINUTES_LEFT
@@ -92,7 +99,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData):
     global FILE_LIST_PARSED
 
     ANTENNA_UUID = str(uuid.uuid4())
-    VERSION_NUMBER = "1.006"
+    VERSION_NUMBER = "1.007"
 
     print("Low Frequency Antenna Emulator Version: " + str(VERSION_NUMBER))
     print("ANTENNA_UUID: " + str(ANTENNA_UUID) + "\n" )
@@ -109,6 +116,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData):
 
     if INCOMING_SCHEMA_VALIDATION == True:
 
+        # JSON schema file names
         config_gpr_validation_file = "ConfigGpr.json"
         config_gps_validation_file = "ConfigGps.json"
         config_dmi_validation_file = "ConfigDmi.json"
@@ -118,11 +126,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData):
         control_dmi_validation_file = "ControlDmi.json"
         control_battery_validation_file = "ControlBattery.json"
         
-        telem_gpr_raw_validation_file = "TelemGprRaw.json"
-        telem_battery_validation_file = "TelemBattery.json"
-        telem_dmi_formatted_validation_file = "TelemDmiFormatted.json"
-        telem_gps_nmea_validation_file = "TelemGpsNmea.json"
-        
+        # creates JSON schema objects to compare with incoming messages for fast validation
         CONFIG_GPR_SCHEMA = getJSONSchemaObject(config_gpr_validation_file)
         CONFIG_GPS_SCHEMA = getJSONSchemaObject(config_gps_validation_file)
         CONFIG_DMI_SCHEMA = getJSONSchemaObject(config_dmi_validation_file)
@@ -131,6 +135,13 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData):
         CONTROL_GPS_SCHEMA = getJSONSchemaObject(control_gps_validation_file)
         CONTROL_DMI_SCHEMA = getJSONSchemaObject(control_dmi_validation_file)        
         CONTROL_BATTERY_SCHEMA = getJSONSchemaObject(control_battery_validation_file)
+    
+    if OUTGOING_SCHEMA_VALIDATION == True:
+
+        telem_gpr_raw_validation_file = "TelemGprRaw.json"
+        telem_battery_validation_file = "TelemBattery.json"
+        telem_dmi_formatted_validation_file = "TelemDmiFormatted.json"
+        telem_gps_nmea_validation_file = "TelemGpsNmea.json"
         
         TELEM_GPR_RAW_SCHEMA = getJSONSchemaObject(telem_gpr_raw_validation_file)
         TELEM_BATTERY_SCHEMA = getJSONSchemaObject(telem_battery_validation_file)
@@ -208,19 +219,28 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData):
         CONFIG_STORAGE_ANTENNA_RESPONSE = "response/config/storage/ant"
 
     if nemaTalker == True:
-        useNemaTalker = True
+        USE_NEMA_TALKER = True
     else:
-        useNemaTalker = False
+        USE_NEMA_TALKER = False
 
     if loopData == True:
         LOOP_DATA = True
     else:
         LOOP_DATA = False
 
+    if debugOutput == True:
+        DEBUG_OUTPUT = True
+    else: 
+        DEBUG_OUTPUT = False
+    
     NOW = pendulum.now()
-    ONE_MIN = NOW.add(minutes=1)
-    ONE_MIN = ONE_MIN - NOW
-
+    TENTH_OF_SEC = NOW.add(seconds=0.1)
+    TENTH_OF_SEC = TENTH_OF_SEC - NOW
+    
+    NOW = pendulum.now()
+    FIFTH_OF_SEC = NOW.add(seconds=0.2)
+    FIFTH_OF_SEC = FIFTH_OF_SEC - NOW
+    
     NOW = pendulum.now()
     ONE_SEC = NOW.add(seconds=1)
     ONE_SEC = ONE_SEC - NOW
@@ -234,12 +254,12 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData):
     TEN_SEC = TEN_SEC - NOW
 
     NOW = pendulum.now()
-    TENTH_SEC = NOW.add(seconds=0.1)
-    TENTH_SEC = TENTH_SEC - NOW
-
+    THIRTY_SEC = NOW.add(seconds=30)
+    THIRTY_SEC = THIRTY_SEC - NOW
+    
     NOW = pendulum.now()
-    FIFTH_OF_SEC = NOW.add(seconds=0.2)
-    FIFTH_OF_SEC = FIFTH_OF_SEC - NOW
+    ONE_MIN = NOW.add(minutes=1)
+    ONE_MIN = ONE_MIN - NOW
 
     POINT_MODE_SCAN_NUMBER = 0
     POINT_MODE_ENABLED = False
@@ -248,7 +268,11 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData):
     BATTERY_CAPACITY = 100
     BATTERY_MINUTES_LEFT = 360
     BATTERY_TELEM_ENABLED = False
+
     GPS_TELEM_ENABLED = False
+
+    SCANS_BEFORE_BACKUP = 300
+    SCANS_TO_BACKUP = 100
 
     # creates a dictionary pairing all data files with valid timerange/sampPerScan combinations 
     # The dictionary key is the currently selected samples underscore timerange, example: "512_256"
@@ -267,4 +291,4 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData):
             file_number += 1
         samps *= 2
 
-    q = Queue() #initialize FIFO queue
+    Q = Queue() #initialize FIFO queue

@@ -28,10 +28,7 @@ def surveyWheelTickSimulator(tickRange, forwards):
     return currentTick
 
 def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, fileName):
-#def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc):
     
-    print("current file:" + fileName)
-
     time_time = time.time
     start = time_time()
     period = 1.0 / scanRate
@@ -47,7 +44,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
 
     send_GPS_data = True
 
-    if ig.useNemaTalker == False:
+    if ig.USE_NEMA_TALKER == False:
         GPS_filename = "FILE__001.DZG"
         with open(GPS_filename) as f:
             GPS_data = f.readlines()
@@ -70,10 +67,10 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
     #print("binSize: " + str(binSize))
     #print("=============================")
 
-    currentBinNumber = -1
-    fcurrentBinNumber = -1
-    newBinNumber = -1 # bin with the highest value
-    lastBinNumber = -1 # previous bin
+    currentBinNumber = 0
+    fcurrentBinNumber = 0
+    newBinNumber = 0 # bin with the highest value
+    lastBinNumber = 0 # previous bin
 
     initial_samples = samples_per_scan
     initial_scanRate = scanRate
@@ -84,21 +81,27 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
         byte_count = ig.POINT_MODE_BYTE_COUNT
     
     scan_count = 0
-    scanMessagesSent = 0
     totalTickCount = 0
-    lastTickCount = 0
 
-    tick_high_end = 250
-    tick_low_end = 150
+    #tick_high_end = 250
+    #tick_low_end = 150
+
+    tick_high_end = 160
+    tick_low_end = 110
+
+    prevent_duplicate = False # this flag protects the nextBackup value from increasing multiple times in a row if it takes multiple ticks to fill a bin
+
     tickRange = [tick_low_end, tick_high_end]
     forwards = True
-    nextBackup = 300
+    nextBackup = ig.SCANS_BEFORE_BACKUP
+    scansToBackup = ig.SCANS_TO_BACKUP
     
     header_skipped = False # flag to skip file header first loop after file open
     skip_to_file_position = False # in point mode, skips to stored file position 
 
-    while True:
+    first_output_bin = False
 
+    while True:
         period = 1.0 / scanRate
 
         if header_skipped == False:
@@ -109,8 +112,8 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
         batt_time = currentTime - lastBatteryCheck
         GPS_time = currentTime - lastGPSCheck
 
-        if not ig.q.empty(): 
-            msg = ig.q.get()
+        if not ig.Q.empty(): 
+            msg = ig.Q.get()
             if msg.topic == "control/gps/state":
                 print("\n")
             print("message topic: " + str(msg.topic) + "\nmessage payload: " + str(msg.payload) + "\n===============================\n")
@@ -153,113 +156,30 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                 scansPerMeter = message['scansPerMeter']
                 binSize = message['binSize']
 
-        if currentBinNumber == -1 and newBinNumber == -1 and lastBinNumber == -1:
-            currentBinNumber = 0
-            fcurrentBinNumber = 0
-            newBinNumber = 0
-            lastBinNumber = 0
-
-        else:
-            if mode == "swtick":
+        if mode == "swtick":
                 
-                if (time_time() - start) > period:
+            if (time_time() - start) > period:
 
-                    start += period
-                    newTick = surveyWheelTickSimulator(tickRange, forwards)
-                    totalTickCount += newTick
+                start += period
+                newTick = surveyWheelTickSimulator(tickRange, forwards)
+                
+                totalTickCount += newTick
+                    
+                distance = totalTickCount / ticksPerMeter
 
-                    distance = totalTickCount / ticksPerMeter
+                distance_in_feet = distance * 3.28084
+                    
+                fcurrentBinNumber = totalTickCount / ticksPerScan
 
-                    fcurrentBinNumber = totalTickCount / ticksPerScan
+                currentBinNumber = math.floor(fcurrentBinNumber)
 
-                    currentBinNumber = math.floor(fcurrentBinNumber)
+                if currentBinNumber > newBinNumber:
 
-                    if currentBinNumber > newBinNumber:
+                    prevent_duplicate = False
 
-                        if currentBinNumber % 50 == 0 and currentBinNumber != 0:
-                            print("currentBinNumber: " + str(currentBinNumber))
+                    if (currentBinNumber - 1) % 50 == 0 and (currentBinNumber - 1) != 0:
+                        print("Current Bin Number: " + str(currentBinNumber - 1))
                         
-                        data_chunk = data_file.read(samples_per_scan * 4) # unpacks binary data to read as 4-byte int
-                        data_chunk_size = samples_per_scan * 4
-            
-                        data = [data_chunk[0], data_chunk[1], data_chunk[2], data_chunk[3]]
-                        data = struct.unpack("I", bytearray(data))
-                        data = data[0]
-
-                        byte_count += len(data_chunk) # running byte count
-                        encoded_data = base64.b64encode(data_chunk)
-                        encoded_data = encoded_data.decode("utf-8")
-                        
-                        JSON_GPR = mp.prepareGPRSurveyMessage(scan_count, encoded_data, distance)
-                        #print(JSON_GPR)
-                        json_validate = json.loads(JSON_GPR)
-                    
-                        if ig.OUTGOING_SCHEMA_VALIDATION == True:           
-                            jsonschema.validate(json_validate, ig.TELEM_GPR_RAW_SCHEMA)
-
-                        client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
-                        scan_count+=1
-                        newBinNumber = lastBinNumber = currentBinNumber
-                        
-                    elif currentBinNumber <= newBinNumber and forwards == False:
-                        if currentBinNumber < lastBinNumber:
-                            
-                            if currentBinNumber % 50 == 0 and currentBinNumber != 0:
-                                print("currentBinNumber: " + str(currentBinNumber))
-                            scan_count-=1
-                            roll_back = mp.prepareDMIMessage(scan_count, distance);
-
-                            json_validate = json.loads(roll_back)
-                    
-                            if ig.OUTGOING_SCHEMA_VALIDATION == True:           
-                                jsonschema.validate(json_validate, ig.TELEM_DMI_FORMATTED_SCHEMA)
-
-                            if currentBinNumber != (nextBackup -1):
-                                client.publish(ig.DMI_TOPIC, roll_back)
-                                #print(roll_back)
-                                time.sleep(0.01)
-                                lastBinNumber = currentBinNumber
-                            else:
-                                lastBinNumber = currentBinNumber
-
-                    elif currentBinNumber <= newBinNumber and forwards == True:
-                        if currentBinNumber > lastBinNumber:
-                            
-                            if currentBinNumber % 50 == 0 and currentBinNumber != 0:
-                                print("currentBinNumber: " + str(currentBinNumber))
-                            scan_count+=1
-                            roll_back = mp.prepareDMIMessage(scan_count, distance);
-
-                            json_validate = json.loads(roll_back)
-                    
-                            if ig.OUTGOING_SCHEMA_VALIDATION == True:           
-                                jsonschema.validate(json_validate, ig.TELEM_DMI_FORMATTED_SCHEMA)
-
-                            if currentBinNumber == (nextBackup - 300):
-                                lastBinNumber = currentBinNumber
-                            else:
-                                client.publish(ig.DMI_TOPIC, roll_back)
-                                #print(roll_back)
-                                time.sleep(0.01)
-                                lastBinNumber = currentBinNumber
-                    
-                    if currentBinNumber >= nextBackup:
-                        forwards = False
-
-                    if currentBinNumber <= newBinNumber - 100:
-                        forwards = True
-                        nextBackup += 300
-
-            if mode == "freerunsw":
-                if (time_time() - start) > period:
-
-                    start += period
-                    newTick = surveyWheelTickSimulator(tickRange, forwards)
-
-                    totalTickCount += newTick
-
-                    distance = totalTickCount / ticksPerMeter
-               
                     data_chunk = data_file.read(samples_per_scan * 4) # unpacks binary data to read as 4-byte int
                     data_chunk_size = samples_per_scan * 4
             
@@ -270,81 +190,162 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                     byte_count += len(data_chunk) # running byte count
                     encoded_data = base64.b64encode(data_chunk)
                     encoded_data = encoded_data.decode("utf-8")
-
-                    JSON_GPR = mp.prepareGPRCombinedMessage(scan_count, totalTickCount, encoded_data, distance)
-                    #print(JSON_GPR)
-
+                        
+                    JSON_GPR = mp.prepareGPRSurveyMessage((currentBinNumber - 1), encoded_data, distance)
+                    if ig.DEBUG_OUTPUT == True:
+                        print(JSON_GPR)
                     json_validate = json.loads(JSON_GPR)
                     
                     if ig.OUTGOING_SCHEMA_VALIDATION == True:           
                         jsonschema.validate(json_validate, ig.TELEM_GPR_RAW_SCHEMA)
 
                     client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
+                    newBinNumber = lastBinNumber = currentBinNumber
+                        
+                elif currentBinNumber <= newBinNumber and forwards == False:
+                    if currentBinNumber < lastBinNumber:
+
+                        if (currentBinNumber - 1) % 50 == 0 and (currentBinNumber - 1) != 0:
+                            print("Current Bin Number: " + str(currentBinNumber - 1))
+
+                        roll_back = mp.prepareDMIMessage((currentBinNumber - 1), distance);
+                        json_validate = json.loads(roll_back)
+                    
+                        if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                            jsonschema.validate(json_validate, ig.TELEM_DMI_FORMATTED_SCHEMA)
+
+                        client.publish(ig.DMI_TOPIC, roll_back)
+                        if ig.DEBUG_OUTPUT == True:
+                            print(roll_back)
+                        time.sleep(0.01)
+                        lastBinNumber = currentBinNumber
+
+
+                elif currentBinNumber <= newBinNumber and forwards == True:
+                    if currentBinNumber > lastBinNumber:
+
+                        if (currentBinNumber - 1) % 50 == 0 and (currentBinNumber - 1) != 0:
+                            print("Current Bin Number: " + str(currentBinNumber - 1))
+
+                        roll_back = mp.prepareDMIMessage((currentBinNumber - 1) , distance);
+
+                        json_validate = json.loads(roll_back)
+                    
+                        if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                            jsonschema.validate(json_validate, ig.TELEM_DMI_FORMATTED_SCHEMA)
+
+                        client.publish(ig.DMI_TOPIC, roll_back)
+                        if ig.DEBUG_OUTPUT == True:
+                            print(roll_back)
+                        time.sleep(0.01)
+                        lastBinNumber = currentBinNumber
+                    
+                if currentBinNumber >= nextBackup:
+                    forwards = False
+
+                if currentBinNumber <= newBinNumber - scansToBackup and prevent_duplicate == False:
+                    forwards = True
+                    nextBackup += ig.SCANS_BEFORE_BACKUP
+                    prevent_duplicate = True
+
+        if mode == "freerunsw":
+            if (time_time() - start) > period:
+
+                start += period
+                newTick = surveyWheelTickSimulator(tickRange, forwards)
+
+                totalTickCount += newTick
+
+                distance = totalTickCount / ticksPerMeter
+               
+                data_chunk = data_file.read(samples_per_scan * 4) # unpacks binary data to read as 4-byte int
+                data_chunk_size = samples_per_scan * 4
+            
+                data = [data_chunk[0], data_chunk[1], data_chunk[2], data_chunk[3]]
+                data = struct.unpack("I", bytearray(data))
+                data = data[0]
+                print("data variable: " + str(data))
+
+                byte_count += len(data_chunk) # running byte count
+                encoded_data = base64.b64encode(data_chunk)
+                encoded_data = encoded_data.decode("utf-8")
+
+                JSON_GPR = mp.prepareGPRCombinedMessage(scan_count, totalTickCount, encoded_data, distance)
+                if ig.DEBUG_OUTPUT == True:
+                    print(JSON_GPR)
+
+                json_validate = json.loads(JSON_GPR)
+                    
+                if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                    jsonschema.validate(json_validate, ig.TELEM_GPR_RAW_SCHEMA)
+
+                client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
+                scan_count+=1
+
+                if scan_count % 50 == 0 and scan_count != 0:
+                    print("Scans Published: " + str((scan_count)) + "  Total Tick Count: " + str(totalTickCount))
+
+        elif mode == "freerun":
+            if ig.POINT_MODE_ENABLED == False:
+                if (time_time() - start) > period:
+                    data_chunk = data_file.read(samples_per_scan * 4) # unpacks binary data to read as 4-byte int
+                    data_chunk_size = samples_per_scan * 4
+            
+                    # unpacks the first 4 bytes which contain current scan number (sanity check)
+                    data = [data_chunk[0], data_chunk[1], data_chunk[2], data_chunk[3]]
+                    data = struct.unpack("I", bytearray(data))
+                    data = data[0]
+
+                    byte_count += len(data_chunk) # running byte count
+                    encoded_data = base64.b64encode(data_chunk)
+                    encoded_data = encoded_data.decode("utf-8")
+                    JSON_GPR = mp.prepareGPRFreerunMessage(scan_count, encoded_data)
+                    if ig.DEBUG_OUTPUT == True:
+                        print(JSON_GPR)
+                    json_validate = json.loads(JSON_GPR)
+                    
+                    if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                        jsonschema.validate(json_validate, ig.TELEM_GPR_RAW_SCHEMA)
+
+                    client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
+                    start += period
                     scan_count+=1
 
                     if scan_count % 50 == 0 and scan_count != 0:
-                        print("scan_count: " + str(scan_count) + "  totalTickCount: " + str(totalTickCount))
+                        print("Scans Published: " + str((scan_count)))
+            else: # if config/gpr enableDither parameter == true 
+                if skip_to_file_position == False:
+                    data_file.seek((samples_per_scan * 4 * (ig.POINT_MODE_SCAN_NUMBER)), 1)
 
-            elif mode == "freerun":
-                if ig.POINT_MODE_ENABLED == False:
-                    if (time_time() - start) > period:
-                        data_chunk = data_file.read(samples_per_scan * 4) # unpacks binary data to read as 4-byte int
-                        data_chunk_size = samples_per_scan * 4
+                    data_chunk = data_file.read(samples_per_scan * 4) # unpacks binary data to read as 4-byte int
+                    data_chunk_size = samples_per_scan * 4
+                    byte_count += len(data_chunk) # running byte count
+                    ig.POINT_MODE_BYTE_COUNT += len(data_chunk)
             
-                        # unpacks the first 4 bytes which contain current scan number (sanity check)
-                        data = [data_chunk[0], data_chunk[1], data_chunk[2], data_chunk[3]]
-                        data = struct.unpack("I", bytearray(data))
-                        data = data[0]
+                    data = [data_chunk[0], data_chunk[1], data_chunk[2], data_chunk[3]]
+                    data = struct.unpack("I", bytearray(data))
+                    data = data[0]
 
-                        byte_count += len(data_chunk) # running byte count
-                        encoded_data = base64.b64encode(data_chunk)
-                        encoded_data = encoded_data.decode("utf-8")
-                        JSON_GPR = mp.prepareGPRFreerunMessage(scan_count, encoded_data)
-                        #print(JSON_GPR)
-                        json_validate = json.loads(JSON_GPR)
+                    encoded_data = base64.b64encode(data_chunk)
+                    encoded_data = encoded_data.decode("utf-8")
+
+                    skip_to_file_position = True
                     
-                        if ig.OUTGOING_SCHEMA_VALIDATION == True:           
-                            jsonschema.validate(json_validate, ig.TELEM_GPR_RAW_SCHEMA)
-
-                        client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
-                        start += period
-                        scan_count+=1
-
-                        if scan_count % 50 == 0 and scan_count != 0:
-                            print("scan_count: " + str(scan_count))
-                else: # if config/gpr enableDither parameter == true 
-                    if skip_to_file_position == False:
-                        data_file.seek((samples_per_scan * 4 * (ig.POINT_MODE_SCAN_NUMBER)), 1)
-
-                        data_chunk = data_file.read(samples_per_scan * 4) # unpacks binary data to read as 4-byte int
-                        data_chunk_size = samples_per_scan * 4
-                        byte_count += len(data_chunk) # running byte count
-                        ig.POINT_MODE_BYTE_COUNT += len(data_chunk)
-            
-                        data = [data_chunk[0], data_chunk[1], data_chunk[2], data_chunk[3]]
-                        data = struct.unpack("I", bytearray(data))
-                        data = data[0]
-
-                        encoded_data = base64.b64encode(data_chunk)
-                        encoded_data = encoded_data.decode("utf-8")
-
-                        skip_to_file_position = True
+                if (time_time() - start) > period:                           
+                    JSON_GPR = mp.prepareGPRFreerunMessage(scan_count, encoded_data)
+                    #print(JSON_GPR)
+                    json_validate = json.loads(JSON_GPR)
                     
-                    if (time_time() - start) > period:                           
-                        JSON_GPR = mp.prepareGPRFreerunMessage(scan_count, encoded_data)
-                        #print(JSON_GPR)
-                        json_validate = json.loads(JSON_GPR)
-                    
-                        if ig.OUTGOING_SCHEMA_VALIDATION == True:           
-                            jsonschema.validate(json_validate, ig.TELEM_GPR_RAW_SCHEMA)
+                    if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+                        jsonschema.validate(json_validate, ig.TELEM_GPR_RAW_SCHEMA)
 
-                        client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
-                        start += period
-                        scan_count+=1
+                    client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR)
+                    start += period
+                    scan_count+=1
    
         if GPS_time > ig.FIFTH_OF_SEC and ig.GPS_TELEM_ENABLED == True:            
             
-            if ig.useNemaTalker == False:
+            if ig.USE_NEMA_TALKER == False:
                 if send_GPS_data == True:
                     if GPS_file_line == len(GPS_data) - 1:
                         #GPS_file_line = 0 # to make gps file loop endlessly uncomment this line and comment out line below
@@ -375,8 +376,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
             
             lastGPSCheck = pendulum.parse(mp.prepareTimestamp())            
         
-        #if batt_time > ig.ONE_MIN: #and ig.BATTERY_TELEM_ENABLED == True:
-        if batt_time > ig.FIVE_SEC: #and ig.BATTERY_TELEM_ENABLED == True:
+        if batt_time > ig.THIRTY_SEC: #and ig.BATTERY_TELEM_ENABLED == True:
 
             ig.BATTERY_CAPACITY -= 5
             ig.BATTERY_MINUTES_LEFT -= 5 
@@ -390,7 +390,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
             
             json_validate = json.loads(JSON_battery)
                     
-            if ig.OUTGOING_SCHEMA_VALIDATION == True:           
+            if ig.OUTGOING_SCHEMA_VALIDATION == True:        
                 jsonschema.validate(json_validate, ig.TELEM_BATTERY_SCHEMA)
             
             client.publish(ig.BATTERY_TOPIC, JSON_battery)
@@ -430,4 +430,3 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
             return_values = {'samples_per_scan':samples_per_scan}
             return_values['mode'] = mode
             return return_values
-

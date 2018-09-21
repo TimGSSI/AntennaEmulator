@@ -21,10 +21,12 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, message):
 
-    ig.q.put(message) # add message to global queue
+    ig.Q.put(message) # add message to global queue
 
 def main(argv):
 
+    # when systemd starts this script on linux board, it is necessary to change present 
+    # working directory to where the project resides
     abspath = os.path.abspath(__file__)
     dname = os.path.dirname(abspath)
     os.chdir(dname)
@@ -35,8 +37,9 @@ def main(argv):
     incoming_schema_validation = True
     outgoing_schema_validation = True
     loopData = True
+    debugOutput = False
 
-    ig.initialize_globals(test_topics, nemaTalker, incoming_schema_validation, outgoing_schema_validation, loopData)
+    ig.initialize_globals(test_topics, nemaTalker, incoming_schema_validation, outgoing_schema_validation, loopData, debugOutput)
 
     broker="localhost"
 
@@ -44,7 +47,7 @@ def main(argv):
     client.on_connect=on_connect # bind call back functions
     client.on_message=on_message
     client.will_set("stack/clientstatus", "LOST_CONNECTION", 0, False)
-    print("Connecting to broker...", broker)    
+    print("Connecting to broker:", broker)    
 
     lastBatteryCheck = pendulum.parse(mp.prepareTimestamp())
     lastGPSCheck = pendulum.parse(mp.prepareTimestamp())
@@ -52,19 +55,19 @@ def main(argv):
     client.connect(broker)
     client.loop_start()
 
-    client.subscribe(ig.CONFIG_DEVICE_TOPIC)        #"config/device"
-    client.subscribe(ig.CONFIG_GPR_TOPIC)           #"config/gpr"
-    client.subscribe(ig.CONTROL_GPS_TOPIC)          #"config/gps"
-    client.subscribe(ig.CONFIG_DMI_TOPIC)           #"config/dmi/0"
-    client.subscribe(ig.DMI_OUTPUT_FORMATTED_TOPIC) #"config/dmi/0/output/formatted"
-    client.subscribe(ig.CONTROL_GPS_TOPIC)          #"control/gps/state"
-    client.subscribe(ig.CONTROL_GPR_STATE_TOPIC)    #"control/gpr/state"
-    client.subscribe(ig.CONTROL_BATTERY_STATE)      #"control/battery/state"
-    client.subscribe(ig.CONTROL_DMI_TOPIC)          #"control/dmi/state"
-    client.subscribe(ig.STATUS_ID)                  #"status/id"
-    client.subscribe(ig.CONFIG_STORAGE_ANTENNA)     #"config/storage/antenna"
+    client.subscribe(ig.CONFIG_DEVICE_TOPIC)        # config/device
+    client.subscribe(ig.CONFIG_GPR_TOPIC)           # config/gpr
+    client.subscribe(ig.CONTROL_GPS_TOPIC)          # config/gps
+    client.subscribe(ig.CONFIG_DMI_TOPIC)           # config/dmi/0
+    client.subscribe(ig.DMI_OUTPUT_FORMATTED_TOPIC) # config/dmi/0/output/formatted
+    client.subscribe(ig.CONTROL_GPS_TOPIC)          # control/gps/state
+    client.subscribe(ig.CONTROL_GPR_STATE_TOPIC)    # control/gpr/state
+    client.subscribe(ig.CONTROL_BATTERY_STATE)      # control/battery/state
+    client.subscribe(ig.CONTROL_DMI_TOPIC)          # control/dmi/state
+    client.subscribe(ig.STATUS_ID)                  # status/id
+    client.subscribe(ig.CONFIG_STORAGE_ANTENNA)     # config/storage/antenna
 
-    if ig.useNemaTalker == False:
+    if ig.USE_NEMA_TALKER == False:
         GPS_filename = "FILE__001.DZG"
         with open(GPS_filename) as f:
             GPS_data = f.readlines()
@@ -76,6 +79,7 @@ def main(argv):
         soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         soc.bind(("", port))
 
+    # depending on the mode, certain messages MUST be recieved before collection can begin
     config_gpr_message_recieved = False
     control_gpr_message_recieved = False
     dmi_message_recieved = False
@@ -94,14 +98,14 @@ def main(argv):
         batt_time = currentTime - lastBatteryCheck
         GPS_time = currentTime - lastGPSCheck
 
-        if not ig.q.empty(): 
- 
-            msg = ig.q.get()  #get the first message which was received and delete
+        if not ig.Q.empty():
+
+            msg = ig.Q.get()  # get the first message which was received, then delete from queue
+
             print("message topic: " + str(msg.topic) + "\nmessage payload: " + str(msg.payload) + "\n===============================\n")
-            message = pm.processMessage(msg, client)
+            message = pm.processMessage(msg, client) # sends message to processing function, which validates params and extracts nessary values
 
             if message['msg'] == 'control_GPR_msg':
-                
                 send_data = message['send_data']
                 control_gpr_message_recieved = True
                 
@@ -134,7 +138,7 @@ def main(argv):
                     control_gpr_message_recieved = False
 
         if mode == "freerun":
-            if config_gpr_message_recieved == True and control_gpr_message_recieved == True:# and dmi_message_recieved == True:    
+            if config_gpr_message_recieved == True and control_gpr_message_recieved == True:    
                 if send_data == True:
                     current_file = ig.FILE_LIST[str(samples_per_scan) + "_" + str(time_range)]
                     reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, current_file)
@@ -143,8 +147,8 @@ def main(argv):
                     control_gpr_message_recieved = False
 
         if GPS_time > ig.FIFTH_OF_SEC and ig.GPS_TELEM_ENABLED == True:            
-        
-            if ig.useNemaTalker == False:
+            # this debug flag will feed in GPS strings from a .DZG file that was collected with a production UtilityScan system 
+            if ig.USE_NEMA_TALKER == False:
                 if GPS_file_line == len(GPS_data):
                     GPS_file_line = 0
                 JSON_GPS = mp.prepareGPSMessage(GPS_data[GPS_file_line])
@@ -153,6 +157,7 @@ def main(argv):
                 if ig.OUTGOING_SCHEMA_VALIDATION == True:           
                     jsonschema.validate(json_validate, ig.TELEM_GPS_NMEA_SCHEMA)
                 GPS_file_line += 1
+            # this debug flag allows you to read fake, generated GPS strings over a virtual serial port using the "NemaTalker" application     
             else:
                 GPS, addr = soc.recvfrom(128)
                 GPS = GPS.decode("utf-8").strip()
@@ -166,11 +171,11 @@ def main(argv):
             
             lastGPSCheck = pendulum.parse(mp.prepareTimestamp())
 
-        #if batt_time > ig.ONE_MIN: #and ig.BATTERY_TELEM_ENABLED == True:
-        if batt_time > ig.FIVE_SEC: #and ig.BATTERY_TELEM_ENABLED == True:
+        if batt_time > ig.THIRTY_SEC: #and ig.BATTERY_TELEM_ENABLED == True:
             ig.BATTERY_CAPACITY -= 5
             ig.BATTERY_MINUTES_LEFT -= 5
 
+            # endlessly loops battery values over full possible range
             if ig.BATTERY_CAPACITY == 0:
                 ig.BATTERY_CAPACITY = 100
             if ig.BATTERY_MINUTES_LEFT == 0:
@@ -186,9 +191,6 @@ def main(argv):
             client.publish(ig.BATTERY_TOPIC, JSON_battery)
 
             lastBatteryCheck = pendulum.parse(mp.prepareTimestamp())
-           
-    #client.loop_stop() # stop loop
-    #client.disconnect() # disconnect
 
 if __name__ == "__main__":
     main(sys.argv)
