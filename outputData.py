@@ -27,7 +27,13 @@ def surveyWheelTickSimulator(tickRange, forwards):
 
     return currentTick
 
-def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, fileName):
+def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, fileName):
+    
+    print("################################################")    
+    print("fileName: " + fileName)
+    print("current samples per scan: " + str(samples_per_scan))
+    print("current timerange: " + str(timeRange))
+    print("################################################")    
     
     time_time = time.time
     start = time_time()
@@ -123,32 +129,36 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
             if message['msg'] == "control_GPR_msg":
                 send_data = message['send_data']                
             elif message['msg'] == "config_gpr":
-                samples_per_scan = message['samples_per_scan']
-                tx_rate = message['tx_rate']
-                scanRate = message['scanRate']
-                mode = message['mode']
-                fileName = message['currentFile']
-                print("currentFile from outputData: " + fileName)
-
-                if samples_per_scan == initial_samples:
-                    data_file.close()
-                    time.sleep(0.2)
-                    data_file = open(files_dir + fileName, 'rb')
-                    header_skipped = False
-                    byte_count = 0
-                    scan_count = 0
-                elif samples_per_scan != initial_samples:
-                    ig.POINT_MODE_SCAN_NUMBER = 0
-                    ig.POINT_MODE_BYTE_COUNT = 0
-                    data_file.close()
-                    time.sleep(0.2)
-                    full_path = files_dir + fileName
-                    header_skipped = False
-                    byte_count = 0
-                    scan_count = 0
-                    initial_samples = samples_per_scan
-                    size = os.path.getsize(full_path)
-                    data_file = open(full_path, 'rb')
+                if "tx_rate" in message:
+                  tx_rate = message['tx_rate']
+                if "scanRage" in message: 
+                    scanRate = message['scanRate']
+                if "mode" in message:
+                    mode = message['mode']
+                if "currentFile" in message:
+                    fileName = message['currentFile']
+                    print("currentFile from outputData: " + fileName)
+                if "samples_per_scan" in message:
+                    samples_per_scan = message['samples_per_scan']
+                    if samples_per_scan == initial_samples:
+                        data_file.close()
+                        time.sleep(0.2)
+                        data_file = open(files_dir + fileName, 'rb')
+                        header_skipped = False
+                        byte_count = 0
+                        scan_count = 0
+                    elif samples_per_scan != initial_samples:
+                        ig.POINT_MODE_SCAN_NUMBER = 0
+                        ig.POINT_MODE_BYTE_COUNT = 0
+                        data_file.close()
+                        time.sleep(0.2)
+                        full_path = files_dir + fileName
+                        header_skipped = False
+                        byte_count = 0
+                        scan_count = 0
+                        initial_samples = samples_per_scan
+                        size = os.path.getsize(full_path)
+                        data_file = open(full_path, 'rb')
                     
             elif message['msg'] == "config_dmi":
                 ticksPerMeter = message['ticksPerMeter']
@@ -179,7 +189,7 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
 
                     if (currentBinNumber - 1) % 50 == 0 and (currentBinNumber - 1) != 0:
                         print("Current Bin Number: " + str(currentBinNumber - 1))
-                        
+                    
                     data_chunk = data_file.read(samples_per_scan * 4) # unpacks binary data to read as 4-byte int
                     data_chunk_size = samples_per_scan * 4
             
@@ -240,8 +250,8 @@ def output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMet
                         time.sleep(0.01)
                         lastBinNumber = currentBinNumber
                     
-                if currentBinNumber >= nextBackup:
-                    forwards = False
+                #if currentBinNumber >= nextBackup:
+                #    forwards = False
 
                 if currentBinNumber <= newBinNumber - scansToBackup and prevent_duplicate == False:
                     forwards = True

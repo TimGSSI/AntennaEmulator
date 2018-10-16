@@ -103,7 +103,7 @@ def processMessage(msg, client):
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
         client.publish(ig.CONFIG_STORAGE_ANTENNA_RESPONSE, responseMessage)
 
-    if msg.topic == ig.CONTROL_GPR_STATE_TOPIC:
+    elif msg.topic == ig.CONTROL_GPR_STATE_TOPIC:
 
         json_msg = json.loads(msg.payload.decode('utf-8'))
                 
@@ -118,7 +118,8 @@ def processMessage(msg, client):
         # response message
         fullMessage = msg.payload.decode("utf-8")
         messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
-        del messageWithoutTimestamp['timestamp']
+        if "timestamp" in messageWithoutTimestamp:
+            del messageWithoutTimestamp['timestamp']
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
         client.publish(ig.CONTROL_GPR_STATE_RESPONSE, responseMessage)
@@ -128,7 +129,7 @@ def processMessage(msg, client):
 
         return values
 
-    if msg.topic == ig.CONTROL_DMI_TOPIC:
+    elif msg.topic == ig.CONTROL_DMI_TOPIC:
 
         json_msg = json.loads(msg.payload.decode('utf-8'))
 
@@ -152,7 +153,7 @@ def processMessage(msg, client):
 
         return values
 
-    if msg.topic == ig.CONTROL_GPS_TOPIC:
+    elif msg.topic == ig.CONTROL_GPS_TOPIC:
 
         json_msg = json.loads(msg.payload.decode('utf-8'))  
 
@@ -176,7 +177,7 @@ def processMessage(msg, client):
 
         return values
 
-    if msg.topic == ig.CONTROL_BATTERY_STATE:  # this message does not get sent to me yet
+    elif msg.topic == ig.CONTROL_BATTERY_STATE:  # this message does not get sent to me yet
 
         json_msg = json.loads(msg.payload.decode('utf-8'))
 
@@ -200,7 +201,7 @@ def processMessage(msg, client):
 
         return values
 
-    if msg.topic == ig.CONFIG_GPS_TOPIC:  # this message does not get sent to me yet
+    elif msg.topic == ig.CONFIG_GPS_TOPIC:  # this message does not get sent to me yet
 
         json_msg = json.loads(msg.payload.decode('utf-8'))  
 
@@ -213,7 +214,7 @@ def processMessage(msg, client):
 
         return values
 
-    if msg.topic == ig.CONFIG_DMI_TOPIC:
+    elif msg.topic == ig.CONFIG_DMI_TOPIC:
 
         json_msg = json.loads(msg.payload.decode('utf-8'))
 
@@ -237,7 +238,7 @@ def processMessage(msg, client):
 
         return values
 
-    if msg.topic == ig.DMI_OUTPUT_FORMATTED_TOPIC:
+    elif msg.topic == ig.DMI_OUTPUT_FORMATTED_TOPIC:
 
         json_msg = json.loads(msg.payload.decode('utf-8'))
 
@@ -257,128 +258,156 @@ def processMessage(msg, client):
 
         return values
                 
-    if msg.topic == ig.CONFIG_GPR_TOPIC:
-                
+    elif (msg.topic == ig.CONFIG_GPR_TOPIC) or (msg.topic == ig.CONFIG_GPR_CHAN_0_TOPIC):
         json_msg = json.loads(msg.payload.decode('utf-8'))
 
         if ig.INCOMING_SCHEMA_VALIDATION == True:  
             jsonschema.validate(json_msg, ig.CONFIG_GPR_SCHEMA)
 
         values = {'msg':'config_gpr'}
-        values['samples_per_scan'] = json_msg["samples"]
-        values['tx_rate'] = json_msg["txRateKHz"]
-        values['scanRate'] = json_msg["scanRateHz"]
-        values['mode'] = json_msg["scanControl"]
         
-        if json_msg["enableDither"] == True:
-            ig.POINT_MODE_ENABLED = True
-        elif json_msg["enableDither"] == False:
-            ig.POINT_MODE_ENABLED = False
-            ig.POINT_MODE_SCAN_NUMBER = 0
-            ig.POINT_MODE_BYTE_COUNT = 0
-
-        values['numberOfChannels'] = len(json_msg['channels'])
+        if "samples" in json_msg:
+            values['samples_per_scan'] = json_msg["samples"]
+        if "txRateKHz" in json_msg:
+            values['tx_rate'] = json_msg["txRateKHz"]
+        if "scanRateHz" in json_msg:
+            values['scanRate'] = json_msg["scanRateHz"]
+        if "scanControl" in json_msg:
+            values['mode'] = json_msg["scanControl"]
+       
+        if "enableDither" in json_msg: 
+            if json_msg["enableDither"] == True:
+                ig.POINT_MODE_ENABLED = True
+            elif json_msg["enableDither"] == False:
+                ig.POINT_MODE_ENABLED = False
+                ig.POINT_MODE_SCAN_NUMBER = 0
+                ig.POINT_MODE_BYTE_COUNT = 0
         
-        antenna1 = {} # this section collects configuration values for multiple antennas
-        antenna2 = {}
-        antenna3 = {}
-        antenna4 = {}
+        if "channels" in json_msg:
 
-        if len(json_msg['channels']) == 1:            
-            antenna1['enable'] = json_msg['channels'][0]['enable']
-            antenna1['positionOffsetPs'] = json_msg['channels'][0]['positionOffsetPs']
-            antenna1['timeRangeNs'] = json_msg['channels'][0]['timeRangeNs']
-            values['antenna1'] = antenna1
-
-        elif len(json_msg['channels']) == 2:
-            antenna1['enable'] = json_msg['channels'][0]['enable']
-            antenna1['positionOffsetPs'] = json_msg['channels'][0]['positionOffsetPs']
-            antenna1['timeRangeNs'] = json_msg['channels'][0]['timeRangeNs']
-            values['antenna1'] = antenna1
-
-            antenna2['enable'] = json_msg['channels'][1]['enable']
-            antenna2['positionOffsetPs'] = json_msg['channels'][1]['positionOffsetPs']
-            antenna2['timeRangeNs'] = json_msg['channels'][1]['timeRangeNs']
-            values['antenna2'] = antenna2
-
-        elif len(json_msg['channels']) == 3:
-            antenna1['enable'] = json_msg['channels'][0]['enable']
-            antenna1['positionOffsetPs'] = json_msg['channels'][0]['positionOffsetPs']
-            antenna1['timeRangeNs'] = json_msg['channels'][0]['timeRangeNs']
-            values['antenna1'] = antenna1
-
-            antenna2['enable'] = json_msg['channels'][1]['enable']
-            antenna2['positionOffsetPs'] = json_msg['channels'][1]['positionOffsetPs']
-            antenna2['timeRangeNs'] = json_msg['channels'][1]['timeRangeNs']
-            values['antenna2'] = antenna2
-
-            antenna3['enable'] = json_msg['channels'][2]['enable']
-            antenna3['positionOffsetPs'] = json_msg['channels'][2]['positionOffsetPs']
-            antenna3['timeRangeNs'] = json_msg['channels'][2]['timeRangeNs']
-            values['antenna3'] = antenna3
+            values['numberOfChannels'] = len(json_msg['channels'])
         
-        elif len(json_msg['channels']) == 4:
-            antenna1['enable'] = json_msg['channels'][0]['enable']
-            antenna1['positionOffsetPs'] = json_msg['channels'][0]['positionOffsetPs']
-            antenna1['timeRangeNs'] = json_msg['channels'][0]['timeRangeNs']
-            values['antenna1'] = antenna1
+            antenna1 = {} # this section collects configuration values for multiple antennas
+            antenna2 = {}
+            antenna3 = {}
+            antenna4 = {}
 
-            antenna2['enable'] = json_msg['channels'][1]['enable']
-            antenna2['positionOffsetPs'] = json_msg['channels'][1]['positionOffsetPs']
-            antenna2['timeRangeNs'] = json_msg['channels'][1]['timeRangeNs']
-            values['antenna2'] = antenna2
+            if len(json_msg['channels']) == 1:            
+                if "enable" in json_msg['channels'][0]:
+                    antenna1['enable'] = json_msg['channels'][0]['enable']
+                if "positionOffsetPs" in json_msg['channels'][0]:
+                    antenna1['positionOffsetPs'] = json_msg['channels'][0]['positionOffsetPs']
+                if "timeRangeNs" in json_msg['channels'][0]:
+                    antenna1['timeRangeNs'] = json_msg['channels'][0]['timeRangeNs']
+                    print("TIMERANGE: " + str(antenna1['timeRangeNs']))
+                values['antenna1'] = antenna1
 
-            antenna3['enable'] = json_msg['channels'][2]['enable']
-            antenna3['positionOffsetPs'] = json_msg['channels'][2]['positionOffsetPs']
-            antenna3['timeRangeNs'] = json_msg['channels'][2]['timeRangeNs']
-            values['antenna3'] = antenna3
+            elif len(json_msg['channels']) == 2:
+                antenna1['enable'] = json_msg['channels'][0]['enable']
+                antenna1['positionOffsetPs'] = json_msg['channels'][0]['positionOffsetPs']
+                antenna1['timeRangeNs'] = json_msg['channels'][0]['timeRangeNs']
+                values['antenna1'] = antenna1
 
-            antenna4['enable'] = json_msg['channels'][3]['enable']
-            antenna4['positionOffsetPs'] = json_msg['channels'][3]['positionOffsetPs']
-            antenna4['timeRangeNs'] = json_msg['channels'][3]['timeRangeNs']
-            values['antenna4'] = antenna4
+                antenna2['enable'] = json_msg['channels'][1]['enable']
+                antenna2['positionOffsetPs'] = json_msg['channels'][1]['positionOffsetPs']
+                antenna2['timeRangeNs'] = json_msg['channels'][1]['timeRangeNs']
+                values['antenna2'] = antenna2
+
+            elif len(json_msg['channels']) == 3:
+                antenna1['enable'] = json_msg['channels'][0]['enable']
+                antenna1['positionOffsetPs'] = json_msg['channels'][0]['positionOffsetPs']
+                antenna1['timeRangeNs'] = json_msg['channels'][0]['timeRangeNs']
+                values['antenna1'] = antenna1
+
+                antenna2['enable'] = json_msg['channels'][1]['enable']
+                antenna2['positionOffsetPs'] = json_msg['channels'][1]['positionOffsetPs']
+                antenna2['timeRangeNs'] = json_msg['channels'][1]['timeRangeNs']
+                values['antenna2'] = antenna2
+
+                antenna3['enable'] = json_msg['channels'][2]['enable']
+                antenna3['positionOffsetPs'] = json_msg['channels'][2]['positionOffsetPs']
+                antenna3['timeRangeNs'] = json_msg['channels'][2]['timeRangeNs']
+                values['antenna3'] = antenna3
         
+            elif len(json_msg['channels']) == 4:
+                antenna1['enable'] = json_msg['channels'][0]['enable']
+                antenna1['positionOffsetPs'] = json_msg['channels'][0]['positionOffsetPs']
+                antenna1['timeRangeNs'] = json_msg['channels'][0]['timeRangeNs']
+                values['antenna1'] = antenna1
+
+                antenna2['enable'] = json_msg['channels'][1]['enable']
+                antenna2['positionOffsetPs'] = json_msg['channels'][1]['positionOffsetPs']
+                antenna2['timeRangeNs'] = json_msg['channels'][1]['timeRangeNs']
+                values['antenna2'] = antenna2
+
+                antenna3['enable'] = json_msg['channels'][2]['enable']
+                antenna3['positionOffsetPs'] = json_msg['channels'][2]['positionOffsetPs']
+                antenna3['timeRangeNs'] = json_msg['channels'][2]['timeRangeNs']
+                values['antenna3'] = antenna3
+
+                antenna4['enable'] = json_msg['channels'][3]['enable']
+                antenna4['positionOffsetPs'] = json_msg['channels'][3]['positionOffsetPs']
+                antenna4['timeRangeNs'] = json_msg['channels'][3]['timeRangeNs']
+                values['antenna4'] = antenna4
+ 
         fullMessage = msg.payload.decode("utf-8")
         messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
 
-        del messageWithoutTimestamp['timestamp']
+        if "timestamp" in messageWithoutTimestamp:
+            del messageWithoutTimestamp['timestamp']
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
 
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
 
-        file_dictionary_position = str(json_msg["samples"]) + "_" + str(json_msg['channels'][0]['timeRangeNs'])
-        values['currentFile'] = ig.FILE_LIST[file_dictionary_position]
+        if "samples" in json_msg and "channels" in json_msg:
+            file_dictionary_position = str(json_msg["samples"]) + "_" + str(json_msg['channels'][0]['timeRangeNs'])
+            values['currentFile'] = ig.FILE_LIST[file_dictionary_position]
         
-        current_sampPerScan = json_msg["samples"]
-        current_timeRange = json_msg['channels'][0]['timeRangeNs']
-        current_positionOffsetNs = json_msg['channels'][0]['positionOffsetPs']
+        if "samples" in json_msg:
+            current_sampPerScan = json_msg["samples"]
+        if "channels" in json_msg:
+            current_timeRange = json_msg['channels'][0]['timeRangeNs']
+        if "positionOffsetPs" in json_msg:
+            current_positionOffsetNs = json_msg['channels'][0]['positionOffsetPs']
+        
         valid_timeRange = 0
         valid_positionOffsetNs = 0
         
-        if current_positionOffsetNs % 8000 == 0:
-            valid_positionOffsetNs = current_positionOffsetNs
-        else:
-            raise ValueError('positionOffsetNs value is not evenly divisible by 8000.  Current positionOffsetNs value: ' + struct(positionOffsetNs))
-        
-        # this section ensures that selected samples/scan and timerange pairing is legal 
-        if current_sampPerScan == current_timeRange:
-            valid_timeRange = current_timeRange
-        elif (current_sampPerScan * 2) == current_timeRange:
-            valid_timeRange = current_timeRange
-        elif (current_sampPerScan / 2) == current_timeRange:
-            valid_timeRange = current_timeRange
-        elif (current_sampPerScan / 4) == current_timeRange:
-            valid_timeRange = current_timeRange
-        elif (current_sampPerScan / 8) == current_timeRange:
-            valid_timeRange = current_timeRange
-        else:
-            raise ValueError('timeRangeNs value does not fall within acceptable range.  Current timeRangeNs value: ' + struct(current_timeRange))
+        if "positionOffsetPs" in json_msg: 
+            if current_positionOffsetNs % 8000 == 0:
+                valid_positionOffsetNs = current_positionOffsetNs
+            else:
+                raise ValueError('positionOffsetNs value is not evenly divisible by 8000.  Current positionOffsetNs value: ' + struct(positionOffsetNs))
+        skip = False    
+        if "samples" in json_msg and "channels" in json_msg:
+            # this section ensures that selected samples/scan and timerange pairing is legal 
+            if current_sampPerScan == current_timeRange:
+                valid_timeRange = current_timeRange
+            elif (current_sampPerScan * 2) == current_timeRange:
+                valid_timeRange = current_timeRange
+            elif (current_sampPerScan / 2) == current_timeRange:
+                valid_timeRange = current_timeRange
+            elif (current_sampPerScan / 4) == current_timeRange:
+                valid_timeRange = current_timeRange
+            elif (current_sampPerScan / 8) == current_timeRange:
+                valid_timeRange = current_timeRange
+            else:
+                raise ValueError('timeRangeNs value does not fall within acceptable range.  Current timeRangeNs value: ' + struct(current_timeRange))
             # publish response timerange error message to UI here 
             # need to catch Jeremy's error message and mimic the format, it is not published in any documentation
         
-        if valid_timeRange != 0:
-            client.publish(ig.CONFIG_GPR_RESPONSE, responseMessage)
-
+            if valid_timeRange != 0:
+                if msg.topic == ig.CONFIG_GPR_TOPIC:
+                    client.publish(ig.CONFIG_GPR_RESPONSE, responseMessage)
+                    skip = True
+                elif msg.topic == ig.CONFIG_GPR_CHAN_0_TOPIC:
+                    client.publish(ig.CONFIG_GPR_CHAN_0_RESPONSE, responseMessage)
+                    skip = True
+        if skip != True:
+            if msg.topic == ig.CONFIG_GPR_TOPIC:
+                client.publish(ig.CONFIG_GPR_RESPONSE, responseMessage)
+            elif msg.topic == ig.CONFIG_GPR_CHAN_0_TOPIC:
+                client.publish(ig.CONFIG_GPR_CHAN_0_RESPONSE, responseMessage)
         return values
 
     values = {'msg':'nothing'}

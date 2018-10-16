@@ -39,6 +39,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
     global CONFIG_DEVICE_TOPIC
     global CONFIG_GPR_TOPIC
     global CONFIG_GPR_CHAN_0_TOPIC
+    global CONFIG_GPR_CHAN_1_TOPIC
     global CONTROL_GPR_TOPIC
     global DMI_OUTPUT_FORMATTED_TOPIC
     global CONFIG_DMI_TOPIC
@@ -51,6 +52,8 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
     global CONFIG_STORAGE_ANTENNA
 
     global CONFIG_GPR_RESPONSE
+    global CONFIG_GPR_CHAN_0_RESPONSE
+    global CONFIG_GPR_CHAN_1_RESPONSE
     global CONFIG_GPS_RESPONSE
     global CONFIG_DMI_0_RESPONSE
     global CONTROL_DMI_STATE_RESPONSE
@@ -161,9 +164,10 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
         # incoming messages
         CONFIG_DEVICE_TOPIC = "test/config/device"
         CONFIG_GPR_TOPIC = "test/config/gpr"
+        CONFIG_GPR_CHAN_0_TOPIC = "test/config/gpr/chan/0"
+        CONFIG_GPR_CHAN_1_TOPIC = "test/config/gpr/chan/1"
         CONFIG_DMI_TOPIC = "test/config/dmi/0"
         DMI_OUTPUT_FORMATTED_TOPIC = "test/config/dmi/0/output/formatted"
-        CONFIG_GPR_CHAN_0_TOPIC = "test/config/gpr/chan/0"
         CONFIG_GPS_TOPIC = "test/config/gps"
         CONTROL_GPR_TOPIC = "test/control/gpr"       
         CONTROL_DMI_TOPIC = "test/control/dmi/state" 
@@ -173,6 +177,8 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
 
         # response messages
         CONFIG_GPR_RESPONSE = "test/response/config/gpr"
+        CONFIG_GPR_CHAN_0_RESPONSE = "test/response/config/gpr/chan/0"
+        CONFIG_GPR_CHAN_1_RESPONSE = "test/response/config/gpr/chan/1"
         CONFIG_GPS_RESPONSE = "test/response/config/gps"
         CONFIG_DMI_0_RESPONSE = "test/response/config/dmi/0"
         CONFIG_DMI_0__OUTPUT_FORMATTED_RESPONSE = "test/response/config/dmi/0/output/formatted"
@@ -196,9 +202,10 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
         # incoming messages
         CONFIG_DEVICE_TOPIC = "config/device"
         CONFIG_GPR_TOPIC = "config/gpr"
+        CONFIG_GPR_CHAN_0_TOPIC = "config/gpr/chan/0"
+        CONFIG_GPR_CHAN_1_TOPIC = "config/gpr/chan/1"
         CONFIG_DMI_TOPIC = "config/dmi/0"
         DMI_OUTPUT_FORMATTED_TOPIC = "config/dmi/0/output/formatted"
-        CONFIG_GPR_CHAN_0_TOPIC = "config/gpr/chan/0"
         CONFIG_GPS_TOPIC = "config/gps"
         CONTROL_GPR_TOPIC = "control/gpr"
         CONTROL_DMI_TOPIC = "control/dmi/state"
@@ -208,6 +215,8 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
 
         # response messages
         CONFIG_GPR_RESPONSE = "response/config/gpr"
+        CONFIG_GPR_CHAN_0_RESPONSE = "response/config/gpr/chan/0"
+        CONFIG_GPR_CHAN_1_RESPONSE = "response/config/gpr/chan/1"
         CONFIG_GPS_RESPONSE = "response/config/gps"
         CONFIG_DMI_0_RESPONSE = "response/config/dmi/0"
         CONFIG_DMI_0__OUTPUT_FORMATTED_RESPONSE = "response/config/dmi/0/output/formatted"

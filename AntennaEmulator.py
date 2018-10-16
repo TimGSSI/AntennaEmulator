@@ -20,7 +20,6 @@ def on_connect(client, userdata, flags, rc):
         print("Bad connection. Return Code=", rc)
 
 def on_message(client, userdata, message):
-
     ig.Q.put(message) # add message to global queue
 
 def main(argv):
@@ -110,17 +109,23 @@ def main(argv):
                 control_gpr_message_recieved = True
                 
             elif message['msg'] == "config_gpr":
-                if samples_per_scan != message['samples_per_scan']:
-                    ig.POINT_MODE_BYTE_COUNT = 0
-                    ig.POINT_MODE_SCAN_NUMBER = 0
-                samples_per_scan = message['samples_per_scan']
-                tx_rate = message['tx_rate']
-                scanRate = message['scanRate']
-                mode = message['mode']
-                time_range = message['antenna1']['timeRangeNs'] 
+                if "samples_per_scan" in message:
+                    if samples_per_scan != message['samples_per_scan']:
+                        ig.POINT_MODE_BYTE_COUNT = 0
+                        ig.POINT_MODE_SCAN_NUMBER = 0
+                    samples_per_scan = message['samples_per_scan']
+                if "tx_rate" in message:
+                    tx_rate = message['tx_rate']
+                if "scanRate" in message:
+                    scanRate = message['scanRate']
+                if "mode" in message:
+                    mode = message['mode']
+                if "antenna1" in message:
+                    time_range = message['antenna1']['timeRangeNs'] 
+                if "currentFile" in message:
+                    fileName = message['currentFile']
                 config_gpr_message_recieved = True
-                fileName = message['currentFile']
-
+            
             elif message['msg'] == "config_dmi":
                 ticksPerMeter = message['ticksPerMeter']
                 ticksPerMeter = abs(ticksPerMeter)
@@ -132,7 +137,7 @@ def main(argv):
             if config_gpr_message_recieved == True and control_gpr_message_recieved == True and dmi_message_recieved == True:    
                 if send_data == True:
                     current_file = ig.FILE_LIST[str(samples_per_scan) + "_" + str(time_range)]
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, current_file)
+                    reset = od.output_data(samples_per_scan, time_range, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, current_file)
                     mode = reset['mode']
                     samples_per_scan = reset['samples_per_scan']
                     control_gpr_message_recieved = False
@@ -141,7 +146,7 @@ def main(argv):
             if config_gpr_message_recieved == True and control_gpr_message_recieved == True:    
                 if send_data == True:
                     current_file = ig.FILE_LIST[str(samples_per_scan) + "_" + str(time_range)]
-                    reset = od.output_data(samples_per_scan, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, current_file)
+                    reset = od.output_data(samples_per_scan, time_range, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, current_file)
                     mode = reset['mode']
                     samples_per_scan = reset['samples_per_scan']
                     control_gpr_message_recieved = False
