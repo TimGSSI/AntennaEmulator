@@ -27,7 +27,7 @@ def surveyWheelTickSimulator(tickRange, forwards):
 
     return currentTick
 
-def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, fileName):
+def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, fileName, repeats):
     
     print("################################################")    
     print("fileName: " + fileName)
@@ -72,6 +72,20 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
     #print("ticksPerSecond: " + str(ticksPerSecond))
     #print("binSize: " + str(binSize))
     #print("=============================")
+    
+    ###############################
+    # Current State of Parameters
+    #print("positionOffset: " + str(ig.POSITION_OFFSET))
+    #print("time_range: " + str(timeRange))
+    #print("samples_per_scan: " + str(samples_per_scan))
+    #print("repeats: " + str(repeats)) 
+    #print("tx_rate: " + str(ig.TX_RATE)) 
+    #####print("enableDither: " + str(enableDither))
+    #print("scanRate: " + str(scanRate))
+    #print("mode: " + str(mode))
+    #print("scansPerMeter: " + str(scansPerMeter))
+    #print("ticksPerMeter: " + str(ticksPerMeter))
+    ###############################
 
     currentBinNumber = 0
     fcurrentBinNumber = 0
@@ -80,6 +94,7 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
 
     initial_samples = samples_per_scan
     initial_scanRate = scanRate
+    initial_timeRange = timeRange
 
     if ig.POINT_MODE_ENABLED == False:
         byte_count = 0
@@ -119,47 +134,74 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
         GPS_time = currentTime - lastGPSCheck
 
         if not ig.Q.empty(): 
+            
             msg = ig.Q.get()
+            
             if msg.topic == "control/gps/state":
                 print("\n")
             print("message topic: " + str(msg.topic) + "\nmessage payload: " + str(msg.payload) + "\n===============================\n")
 
-            message = pm.processMessage(msg, client)
+            message = pm.processMessage(msg, client, samples_per_scan, timeRange)
+
+            fileChange = False
 
             if message['msg'] == "control_GPR_msg":
                 send_data = message['send_data']                
             elif message['msg'] == "config_gpr":
                 if "tx_rate" in message:
                   tx_rate = message['tx_rate']
-                if "scanRage" in message: 
+                if "scanRate" in message: 
                     scanRate = message['scanRate']
                 if "mode" in message:
                     mode = message['mode']
+                if "antenna1" in message:
+                    if "timeRangeNs" in message['antenna1']:
+                        if initial_timeRange != message['antenna1']['timeRangeNs']:
+                            fileChange = True
+                            initial_timeRange = message['antenna1']['timeRangeNs']
+                            timeRange = message['antenna1']['timeRangeNs'] 
                 if "currentFile" in message:
                     fileName = message['currentFile']
                     print("currentFile from outputData: " + fileName)
                 if "samples_per_scan" in message:
-                    samples_per_scan = message['samples_per_scan']
-                    if samples_per_scan == initial_samples:
-                        data_file.close()
-                        time.sleep(0.2)
-                        data_file = open(files_dir + fileName, 'rb')
-                        header_skipped = False
-                        byte_count = 0
-                        scan_count = 0
-                    elif samples_per_scan != initial_samples:
-                        ig.POINT_MODE_SCAN_NUMBER = 0
-                        ig.POINT_MODE_BYTE_COUNT = 0
-                        data_file.close()
-                        time.sleep(0.2)
-                        full_path = files_dir + fileName
-                        header_skipped = False
-                        byte_count = 0
-                        scan_count = 0
-                        initial_samples = samples_per_scan
-                        size = os.path.getsize(full_path)
-                        data_file = open(full_path, 'rb')
-                    
+                    if initial_samples != message['samples_per_scan']:
+                        fileChange = True
+                        initial_samples = message['samples_per_scan']
+                        samples_per_scan = message['samples_per_scan']
+                #if samples_per_scan == initial_samples:
+                #    data_file.close()
+                #    time.sleep(0.2)
+                #    data_file = open(files_dir + fileName, 'rb')
+                #    header_skipped = False
+                #    byte_count = 0
+                #    scan_count = 0
+                if fileChange == True: 
+                    ig.POINT_MODE_SCAN_NUMBER = 0
+                    ig.POINT_MODE_BYTE_COUNT = 0
+                    data_file.close()
+                    time.sleep(0.2)
+                    #initial_samples = samples_per_scan
+                    fileName = ig.FILE_LIST[str(samples_per_scan) + "_" + str(timeRange)]
+                    full_path = files_dir + fileName
+                    header_skipped = False
+                    byte_count = 0
+                    scan_count = 0
+                    #initial_samples = samples_per_scan
+                    size = os.path.getsize(full_path)
+                    data_file = open(full_path, 'rb')
+                    currentBinNumber = 0
+                    fcurrentBinNumber = 0
+                    newBinNumber = 0 # bin with the highest value
+                    lastBinNumber = 0 # previous bin
+                    totalTickCount = 0
+                    fileChange = False
+
+                    print("################################################")    
+                    print("fileName: " + fileName)
+                    print("current samples per scan: " + str(samples_per_scan))
+                    print("current timerange: " + str(timeRange))
+                    print("################################################")
+ 
             elif message['msg'] == "config_dmi":
                 ticksPerMeter = message['ticksPerMeter']
                 ticksPerMeter = abs(ticksPerMeter)
@@ -438,5 +480,10 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
             if scan_count > 1:
                 client.publish(ig.TELEM_GPR_RAW_TOPIC, JSON_GPR) # if last scan of file, publish message with scan# -1 and empty data field
             return_values = {'samples_per_scan':samples_per_scan}
+            return_values['timeRange'] = timeRange
+            return_values['repeats'] = repeats
+            return_values['scanRate'] = scanRate
+            return_values['ticksPerMeter'] = ticksPerMeter 
+            return_values['scansPerMeter'] = scansPerMeter 
             return_values['mode'] = mode
             return return_values

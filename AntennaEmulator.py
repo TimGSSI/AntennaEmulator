@@ -2,6 +2,7 @@ import messagePreparation as mp
 import initializeGlobals as ig
 import outputData as od
 import processMessage as pm
+import parameterManager as param
 
 import paho.mqtt.client as mqtt
 from queue import Queue
@@ -37,8 +38,9 @@ def main(argv):
     outgoing_schema_validation = True
     loopData = True
     debugOutput = False
+    web_app = True
 
-    ig.initialize_globals(test_topics, nemaTalker, incoming_schema_validation, outgoing_schema_validation, loopData, debugOutput)
+    ig.initialize_globals(test_topics, nemaTalker, incoming_schema_validation, outgoing_schema_validation, loopData, debugOutput, web_app)
 
     broker="localhost"
 
@@ -54,8 +56,11 @@ def main(argv):
     client.connect(broker)
     client.loop_start()
 
+    client.subscribe(ig.RESTORE_SAVED_SETTINGS)     # restore/settings
     client.subscribe(ig.CONFIG_DEVICE_TOPIC)        # config/device
     client.subscribe(ig.CONFIG_GPR_TOPIC)           # config/gpr
+    client.subscribe(ig.CONFIG_GPR_CHAN_0_TOPIC)    # config/gpr/chan/0
+    client.subscribe(ig.CONFIG_GPR_CHAN_1_TOPIC)    # config/gpr/chan/1
     client.subscribe(ig.CONTROL_GPS_TOPIC)          # config/gps
     client.subscribe(ig.CONFIG_DMI_TOPIC)           # config/dmi/0
     client.subscribe(ig.DMI_OUTPUT_FORMATTED_TOPIC) # config/dmi/0/output/formatted
@@ -82,8 +87,10 @@ def main(argv):
     config_gpr_message_recieved = False
     control_gpr_message_recieved = False
     dmi_message_recieved = False
-    
+   
+    enableDither = False 
     send_data = False
+    repeats = 0
     mode = ""
     ticksPerMeter = 1
     scansPerMeter = 1
@@ -91,8 +98,51 @@ def main(argv):
     depth_range = -1
     reset = 0
 
-    while True:
+    with open('storedParameters.json') as params:
+        storedParameters = params.read()
+    params.close()
+    
+    params = json.loads(storedParameters)
 
+    if "positionOffsetPs" in params:
+        #positionOffset = params['positionOffsetPs'] 
+        ig.POSITION_OFFSET = params['positionOffsetPs'] 
+    if "timeRangeNs" in params:
+        time_range = params['timeRangeNs']
+    if "samples" in params:
+        samples_per_scan = params['samples'] 
+    if "repeats" in params:
+        repeats = params['repeats']
+    if "txRateKHz" in params:
+        #tx_rate = params['txRateKHz']
+        ig.TX_RATE = params['txRateKHz']
+    if "enableDither" in params:
+        enableDither = params['enableDither']
+    if "scanRateHz" in params:
+        scanRate = params['scanRateHz']
+    if "scanControl" in params:
+        mode = params['scanControl']
+    if "scansPerMeter" in params: 
+        scansPerMeter = params['scansPerMeter']
+    if "ticksPerMeter" in params:    
+        ticksPerMeter = params['ticksPerMeter']
+
+    ###############################
+    # Current State of Parameters
+    print("Restoring last-used parameters...") 
+    print("positionOffset: " + str(ig.POSITION_OFFSET)) 
+    print("time_range: " + str(time_range))
+    print("samples_per_scan: " + str(samples_per_scan)) 
+    print("repeats: " + str(repeats)) 
+    print("tx_rate: " + str(ig.TX_RATE))
+    print("enableDither: " + str(enableDither))
+    print("scanRate: " + str(scanRate))
+    print("mode: " + str(mode))
+    print("scansPerMeter: " + str(scansPerMeter))
+    print("ticksPerMeter: " + str(ticksPerMeter))
+    ###############################
+
+    while True:
         currentTime = pendulum.parse(mp.prepareTimestamp())
         batt_time = currentTime - lastBatteryCheck
         GPS_time = currentTime - lastGPSCheck
@@ -102,7 +152,7 @@ def main(argv):
             msg = ig.Q.get()  # get the first message which was received, then delete from queue
 
             print("message topic: " + str(msg.topic) + "\nmessage payload: " + str(msg.payload) + "\n===============================\n")
-            message = pm.processMessage(msg, client) # sends message to processing function, which validates params and extracts nessary values
+            message = pm.processMessage(msg, client, samples_per_scan, time_range) # sends message to processing function, which validates params and extracts nessary values
 
             if message['msg'] == 'control_GPR_msg':
                 send_data = message['send_data']
@@ -121,35 +171,53 @@ def main(argv):
                 if "mode" in message:
                     mode = message['mode']
                 if "antenna1" in message:
-                    time_range = message['antenna1']['timeRangeNs'] 
+                    if "timeRangeNs" in message["antenna1"]:
+                        time_range = message['antenna1']['timeRangeNs'] 
                 if "currentFile" in message:
                     fileName = message['currentFile']
                 config_gpr_message_recieved = True
             
             elif message['msg'] == "config_dmi":
-                ticksPerMeter = message['ticksPerMeter']
-                ticksPerMeter = abs(ticksPerMeter)
-                scansPerMeter = message['scansPerMeter']
-                binSize = message['binSize']
+                if "ticksPerMeter" in message:
+                    ticksPerMeter = message['ticksPerMeter']
+                    ticksPerMeter = abs(ticksPerMeter)
+                if "scansPerMeter" in message:
+                    scansPerMeter = message['scansPerMeter']
+                if "binSize" in message:
+                    binSize = message['binSize']
                 dmi_message_recieved = True
 
         if mode == "swtick" or mode == "freerunsw":
-            if config_gpr_message_recieved == True and control_gpr_message_recieved == True and dmi_message_recieved == True:    
+            #if config_gpr_message_recieved == True and control_gpr_message_recieved == True and dmi_message_recieved == True:
+            if True:
                 if send_data == True:
                     current_file = ig.FILE_LIST[str(samples_per_scan) + "_" + str(time_range)]
-                    reset = od.output_data(samples_per_scan, time_range, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, current_file)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
+                    currentParams = od.output_data(samples_per_scan, time_range, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, current_file, repeats)
+                    mode = currentParams['mode']
+                    samples_per_scan = currentParams['samples_per_scan']
+                    time_range = currentParams['timeRange'] 
+                    ticksPerMeter = currentParams['ticksPerMeter'] 
+                    scansPerMeter = currentParams['scansPerMeter']
+                    repeats = currentParams['repeats'] 
+                    scanRate = currentParams['scanRate']
                     control_gpr_message_recieved = False
+                    send_data = False
 
         if mode == "freerun":
-            if config_gpr_message_recieved == True and control_gpr_message_recieved == True:    
+            #if config_gpr_message_recieved == True and control_gpr_message_recieved == True:
+            if True:
                 if send_data == True:
                     current_file = ig.FILE_LIST[str(samples_per_scan) + "_" + str(time_range)]
-                    reset = od.output_data(samples_per_scan, time_range, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, current_file)
-                    mode = reset['mode']
-                    samples_per_scan = reset['samples_per_scan']
+                    currentParams = od.output_data(samples_per_scan, time_range, client, send_data, mode, scanRate, ticksPerMeter, scansPerMeter, soc, current_file, repeats)
+                    mode = currentParams['mode']
+                    samples_per_scan = currentParams['samples_per_scan']
+                    time_range = currentParams['timeRange'] 
+                    ticksPerMeter = currentParams['ticksPerMeter'] 
+                    scansPerMeter = currentParams['scansPerMeter']
+                    repeats = currentParams['repeats'] 
+                    scanRate = currentParams['scanRate']
                     control_gpr_message_recieved = False
+                    send_data = False
 
         if GPS_time > ig.FIFTH_OF_SEC and ig.GPS_TELEM_ENABLED == True:            
             # this debug flag will feed in GPS strings from a .DZG file that was collected with a production UtilityScan system 

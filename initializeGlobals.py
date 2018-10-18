@@ -15,7 +15,7 @@ def getJSONSchemaObject(file_name):
     return schema_object
 
 # this function initializes variables that are shared between multiple files
-def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, debugOutput):
+def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, debugOutput, web_app):
 
     global Q
 
@@ -30,6 +30,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
     global OUTGOING_SCHEMA_VALIDATION
     global LOOP_DATA
     global DEBUG_OUTPUT
+    global WEB_APP
 
     global GPS_NMEA_TOPIC
     global BATTERY_TOPIC
@@ -50,6 +51,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
     global CONTROL_BATTERY_STATE
     global STATUS_ID
     global CONFIG_STORAGE_ANTENNA
+    global RESTORE_SAVED_SETTINGS
 
     global CONFIG_GPR_RESPONSE
     global CONFIG_GPR_CHAN_0_RESPONSE
@@ -81,6 +83,9 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
     global BATTERY_TELEM_ENABLED
     global GPS_TELEM_ENABLED
 
+    global POSITION_OFFSET
+    global TX_RATE
+
     # schema validation objects
     global GENERAL_CONFIG_SCHEMA
     global CONFIG_GPR_SCHEMA
@@ -102,7 +107,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
     global FILE_LIST_PARSED
 
     ANTENNA_UUID = str(uuid.uuid4())
-    VERSION_NUMBER = "1.007"
+    VERSION_NUMBER = "1.008"
 
     print("Low Frequency Antenna Emulator Version: " + str(VERSION_NUMBER))
     print("ANTENNA_UUID: " + str(ANTENNA_UUID) + "\n" )
@@ -227,6 +232,8 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
         STATUS_ID_RESPONSE = "response/status/id"
         CONFIG_STORAGE_ANTENNA_RESPONSE = "response/config/storage/ant"
 
+        RESTORE_SAVED_SETTINGS = "restore/settings"
+
     if nemaTalker == True:
         USE_NEMA_TALKER = True
     else:
@@ -241,6 +248,11 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
         DEBUG_OUTPUT = True
     else: 
         DEBUG_OUTPUT = False
+
+    if web_app == True:
+        WEB_APP = True
+    else:
+        WEB_APP = False
     
     NOW = pendulum.now()
     TENTH_OF_SEC = NOW.add(seconds=0.1)

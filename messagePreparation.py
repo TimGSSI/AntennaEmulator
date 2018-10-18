@@ -43,6 +43,45 @@ def prepareBatteryMessage(capacity, battery_time):
 
     return battMessage
 
+def prepareEmptyConfigGprResponse(current_settings):
+
+    timestamp = prepareTimestamp()
+
+    configMessage = """
+{
+  "uuid": "%s",
+  "timestamp": "%s",
+  "channels":[{
+    "positionOffsetPs": %s,
+    "timeRangeNs": %s}],
+  "samples": %s,
+  "repeats": %s,
+  "txRateKHz": %s,
+  "enableDither": "%s",
+  "scanRateHz": %s,
+  "scanControl": "%s"
+}""" % (ig.ANTENNA_UUID, timestamp, current_settings['positionOffsetPs'], current_settings['timeRangeNs'], current_settings['samples'], current_settings['repeats'], current_settings['txRateKHz'], current_settings['enableDither'], current_settings['scanRateHz'], current_settings['scanControl']) 
+
+    #print(battMessage)
+
+    return configMessage
+
+def prepareEmptyConfigDmiResponse(current_settings):
+
+    timestamp = prepareTimestamp()
+
+    configMessage = """
+{
+  "uuid": "%s",
+  "timestamp": "%s",
+  "scansPerMeter": %s,
+  "ticksPerMeter": %s
+}""" % (ig.ANTENNA_UUID, timestamp, current_settings['scansPerMeter'], current_settings['ticksPerMeter']) 
+
+    #print(battMessage)
+
+    return configMessage
+
 def prepareConfigIdMessage(deviceId, model, antennaGain, positionOffset, survey_cal):
 
     UUID = ig.ANTENNA_UUID

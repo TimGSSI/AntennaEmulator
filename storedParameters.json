@@ -1,0 +1,1 @@
+{"positionOffsetPs": 160000, "timeRangeNs": 1024, "samples": 1024, "repeats": 768, "txRateKHz": 200.0, "enableDither": false, "scanRateHz": 50.0, "scanControl": "swtick", "scansPerMeter": 10.0, "ticksPerMeter": 3450.0}

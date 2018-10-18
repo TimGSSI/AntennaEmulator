@@ -14,8 +14,15 @@ import json
 import jsonschema
 from queue import Queue
 
-def processMessage(msg, client):
-
+def processMessage(msg, client, orig_samples_per_scan, orig_time_range):
+    
+    current_settings_file = "storedParameters.json"
+    with open(current_settings_file) as cs:
+        current_settings = cs.read()
+    cs.close()
+    
+    current_settings = json.loads(current_settings)
+ 
     if msg.topic == ig.CONFIG_STORAGE_ANTENNA:
 
         json_msg = json.loads(msg.payload.decode('utf-8'))
@@ -217,25 +224,52 @@ def processMessage(msg, client):
     elif msg.topic == ig.CONFIG_DMI_TOPIC:
 
         json_msg = json.loads(msg.payload.decode('utf-8'))
+        
+        if str(json_msg) == "{}":
+            full_message = mp.prepareEmptyConfigDmiResponse(current_settings)
 
+            messageWithoutTimestamp = json.loads(full_message)
+            del messageWithoutTimestamp['timestamp']
+            messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
+            responseMessage = mp.prepareControlResponseMessage(full_message, messageWithoutTimestamp)
+
+            client.publish(ig.CONFIG_DMI_0_RESPONSE, responseMessage)
+            
+            values = {'msg':'nothing'}
+            
+            return values
+        
+        bin_calculated = False
+        
         if ig.INCOMING_SCHEMA_VALIDATION == True:           
             jsonschema.validate(json_msg, ig.CONFIG_DMI_SCHEMA)
-
-        binSize =  json_msg["ticksPerMeter"] / json_msg["scansPerMeter"]
+        if "ticksPerMeter" in json_msg and "scansPerMeter" in json_msg: 
+            binSize =  json_msg["ticksPerMeter"] / json_msg["scansPerMeter"]
+            bin_calculated = True
 
         values = {'msg':'config_dmi'}
-        values['ticksPerMeter'] = json_msg["ticksPerMeter"]
-        values['scansPerMeter'] = json_msg["scansPerMeter"]
-        values['binSize'] = binSize
+        if "ticksPerMeter" in json_msg:
+            values['ticksPerMeter'] = json_msg["ticksPerMeter"]
+            current_settings['ticksPerMeter'] = values['ticksPerMeter']
+        if "scansPerMeter" in json_msg:
+            values['scansPerMeter'] = json_msg["scansPerMeter"]
+            current_settings['scansPerMeter'] = values['scansPerMeter']
+        if bin_calculated == True:
+            values['binSize'] = binSize
 
         # response message block
         fullMessage = msg.payload.decode("utf-8")
         messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
-        del messageWithoutTimestamp['timestamp']
+        if "timestamp" in messageWithoutTimestamp:
+            del messageWithoutTimestamp['timestamp']
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
         client.publish(ig.CONFIG_DMI_0_RESPONSE, responseMessage)
 
+        current_settings = json.dumps(current_settings)
+        settings_file = open(current_settings_file, 'w')       
+        settings_file.write(current_settings)
+        settings_file.close()
         return values
 
     elif msg.topic == ig.DMI_OUTPUT_FORMATTED_TOPIC:
@@ -260,6 +294,22 @@ def processMessage(msg, client):
                 
     elif (msg.topic == ig.CONFIG_GPR_TOPIC) or (msg.topic == ig.CONFIG_GPR_CHAN_0_TOPIC):
         json_msg = json.loads(msg.payload.decode('utf-8'))
+        
+        if str(json_msg) == "{}":
+            full_message = mp.prepareEmptyConfigGprResponse(current_settings)
+
+            messageWithoutTimestamp = json.loads(full_message)
+            del messageWithoutTimestamp['timestamp']
+            messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
+            responseMessage = mp.prepareControlResponseMessage(full_message, messageWithoutTimestamp)
+
+            if msg.topic == ig.CONFIG_GPR_TOPIC:
+                client.publish(ig.CONFIG_GPR_RESPONSE, responseMessage)
+            elif msg.topic == ig.CONFIG_GPR_CHAN_0_TOPIC:
+                client.publish(ig.CONFIG_GPR_CHAN_0_RESPONSE, responseMessage)
+            values = {'msg':'nothing'}
+            
+            return values
 
         if ig.INCOMING_SCHEMA_VALIDATION == True:  
             jsonschema.validate(json_msg, ig.CONFIG_GPR_SCHEMA)
@@ -268,12 +318,19 @@ def processMessage(msg, client):
         
         if "samples" in json_msg:
             values['samples_per_scan'] = json_msg["samples"]
+            current_settings['samples'] = values['samples_per_scan']
+            current_sampPerScan = json_msg["samples"]
+        else:
+            current_sampPerScan = orig_samples_per_scan
         if "txRateKHz" in json_msg:
             values['tx_rate'] = json_msg["txRateKHz"]
+            current_settings['txRateKHz'] = values['tx_rate']
         if "scanRateHz" in json_msg:
             values['scanRate'] = json_msg["scanRateHz"]
+            current_settings['scanRateHz'] = values['scanRate']
         if "scanControl" in json_msg:
             values['mode'] = json_msg["scanControl"]
+            current_settings['scanControl'] = values['mode']
        
         if "enableDither" in json_msg: 
             if json_msg["enableDither"] == True:
@@ -297,9 +354,13 @@ def processMessage(msg, client):
                     antenna1['enable'] = json_msg['channels'][0]['enable']
                 if "positionOffsetPs" in json_msg['channels'][0]:
                     antenna1['positionOffsetPs'] = json_msg['channels'][0]['positionOffsetPs']
+                    current_settings['positionOffsetPs'] = antenna1['positionOffsetPs']
                 if "timeRangeNs" in json_msg['channels'][0]:
                     antenna1['timeRangeNs'] = json_msg['channels'][0]['timeRangeNs']
-                    print("TIMERANGE: " + str(antenna1['timeRangeNs']))
+                    current_settings['timeRangeNs'] = antenna1['timeRangeNs']
+                    current_timeRange = json_msg['channels'][0]['timeRangeNs']
+                else: 
+                    current_timeRange = orig_time_range
                 values['antenna1'] = antenna1
 
             elif len(json_msg['channels']) == 2:
@@ -349,7 +410,9 @@ def processMessage(msg, client):
                 antenna4['positionOffsetPs'] = json_msg['channels'][3]['positionOffsetPs']
                 antenna4['timeRangeNs'] = json_msg['channels'][3]['timeRangeNs']
                 values['antenna4'] = antenna4
- 
+        else:
+           current_timeRange = orig_time_range
+  
         fullMessage = msg.payload.decode("utf-8")
         messageWithoutTimestamp = json.loads(msg.payload.decode('utf-8'))
 
@@ -359,55 +422,67 @@ def processMessage(msg, client):
 
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
 
-        if "samples" in json_msg and "channels" in json_msg:
-            file_dictionary_position = str(json_msg["samples"]) + "_" + str(json_msg['channels'][0]['timeRangeNs'])
-            values['currentFile'] = ig.FILE_LIST[file_dictionary_position]
-        
-        if "samples" in json_msg:
-            current_sampPerScan = json_msg["samples"]
-        if "channels" in json_msg:
-            current_timeRange = json_msg['channels'][0]['timeRangeNs']
-        if "positionOffsetPs" in json_msg:
-            current_positionOffsetNs = json_msg['channels'][0]['positionOffsetPs']
-        
-        valid_timeRange = 0
-        valid_positionOffsetNs = 0
+        #if "samples" in json_msg and "channels" in json_msg:
+        #    file_dictionary_position = str(json_msg["samples"]) + "_" + str(json_msg['channels'][0]['timeRangeNs'])
+        #    values['currentFile'] = ig.FILE_LIST[file_dictionary_position]
         
         if "positionOffsetPs" in json_msg: 
             if current_positionOffsetNs % 8000 == 0:
                 valid_positionOffsetNs = current_positionOffsetNs
+                ig.POSITION_OFFSET = valid_positionOffsetNs
             else:
                 raise ValueError('positionOffsetNs value is not evenly divisible by 8000.  Current positionOffsetNs value: ' + struct(positionOffsetNs))
-        skip = False    
-        if "samples" in json_msg and "channels" in json_msg:
-            # this section ensures that selected samples/scan and timerange pairing is legal 
-            if current_sampPerScan == current_timeRange:
-                valid_timeRange = current_timeRange
-            elif (current_sampPerScan * 2) == current_timeRange:
-                valid_timeRange = current_timeRange
-            elif (current_sampPerScan / 2) == current_timeRange:
-                valid_timeRange = current_timeRange
-            elif (current_sampPerScan / 4) == current_timeRange:
-                valid_timeRange = current_timeRange
-            elif (current_sampPerScan / 8) == current_timeRange:
-                valid_timeRange = current_timeRange
-            else:
-                raise ValueError('timeRangeNs value does not fall within acceptable range.  Current timeRangeNs value: ' + struct(current_timeRange))
-            # publish response timerange error message to UI here 
-            # need to catch Jeremy's error message and mimic the format, it is not published in any documentation
-        
-            if valid_timeRange != 0:
-                if msg.topic == ig.CONFIG_GPR_TOPIC:
-                    client.publish(ig.CONFIG_GPR_RESPONSE, responseMessage)
-                    skip = True
-                elif msg.topic == ig.CONFIG_GPR_CHAN_0_TOPIC:
-                    client.publish(ig.CONFIG_GPR_CHAN_0_RESPONSE, responseMessage)
-                    skip = True
-        if skip != True:
-            if msg.topic == ig.CONFIG_GPR_TOPIC:
-                client.publish(ig.CONFIG_GPR_RESPONSE, responseMessage)
-            elif msg.topic == ig.CONFIG_GPR_CHAN_0_TOPIC:
-                client.publish(ig.CONFIG_GPR_CHAN_0_RESPONSE, responseMessage)
+ 
+        # this section ensures that selected samples/scan and timerange pairing is legal 
+        #values['samples_per_scan'] 
+        #values['antenna1']['timeRangeNs']
+
+        #orig_samples_per_scan
+        #orig_time_range
+
+        #current_settings['samples']
+        #current_settings['timeRangeNs']
+        if current_sampPerScan == current_timeRange:
+            valid_timeRange = current_timeRange
+        elif (current_sampPerScan * 2) == current_timeRange:
+            valid_timeRange = current_timeRange
+        elif (current_sampPerScan / 2) == current_timeRange:
+            valid_timeRange = current_timeRange
+        elif (current_sampPerScan / 4) == current_timeRange:
+            valid_timeRange = current_timeRange
+        elif (current_sampPerScan / 8) == current_timeRange:
+            valid_timeRange = current_timeRange
+        else:
+            print("NOT a valid time range/samples per scan pairing.  Reverting to previous values")
+            if "samples_per_scan" in values:
+                values['samples_per_scan'] = orig_samples_per_scan
+                current_settings['samples'] = orig_samples_per_scan
+            if "antenna1" in values:
+                values['antenna1']['timeRangeNs'] = orig_time_range
+                current_settings['timeRangeNs'] = orig_time_range
+
+
+
+
+
+
+
+
+
+
+
+
+
+        if msg.topic == ig.CONFIG_GPR_TOPIC:
+            client.publish(ig.CONFIG_GPR_RESPONSE, responseMessage)
+        elif msg.topic == ig.CONFIG_GPR_CHAN_0_TOPIC:
+            client.publish(ig.CONFIG_GPR_CHAN_0_RESPONSE, responseMessage)
+
+        current_settings = json.dumps(current_settings)
+        settings_file = open(current_settings_file,'w')       
+        settings_file.write(current_settings)
+        settings_file.close()
+       
         return values
 
     values = {'msg':'nothing'}
