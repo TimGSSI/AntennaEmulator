@@ -241,3 +241,17 @@ def prepareControlResponseMessage(incomingMessage, messageWithoutDate):
 }"""  % (ig.ANTENNA_UUID, timestamp, incomingMessage, messageWithoutDate)
 
     return controlResponseMessage
+
+def prepareConfigResponseMessageWithErrors(incomingMessage, messageWithoutDate, errors):
+
+    timestamp = prepareTimestamp()
+
+    controlResponseMessage = """{ 
+  "uuid": "%s", 
+  "timestamp": "%s", 
+  "request": %s,  
+  "result": %s,
+  "errors":[%s]
+}"""  % (ig.ANTENNA_UUID, timestamp, incomingMessage, messageWithoutDate, errors)
+
+    return controlResponseMessage

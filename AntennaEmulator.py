@@ -2,7 +2,6 @@ import messagePreparation as mp
 import initializeGlobals as ig
 import outputData as od
 import processMessage as pm
-import parameterManager as param
 
 import paho.mqtt.client as mqtt
 from queue import Queue

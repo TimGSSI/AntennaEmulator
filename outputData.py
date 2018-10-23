@@ -203,10 +203,13 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
                     print("################################################")
  
             elif message['msg'] == "config_dmi":
-                ticksPerMeter = message['ticksPerMeter']
-                ticksPerMeter = abs(ticksPerMeter)
-                scansPerMeter = message['scansPerMeter']
-                binSize = message['binSize']
+                if "ticksPerMeter" in message:
+                    ticksPerMeter = message['ticksPerMeter']
+                    ticksPerMeter = abs(ticksPerMeter)
+                if "scansPerMeter" in message:
+                    scansPerMeter = message['scansPerMeter']
+                if "binSize" in message:
+                    binSize = message['binSize']
 
         if mode == "swtick":
                 

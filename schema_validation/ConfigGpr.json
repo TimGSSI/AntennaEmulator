@@ -62,7 +62,7 @@
       "title": "samples per scan",
       "description": "Zero emits the full GPR capability discovery",
       "type": "integer",
-      "enum": [256, 512, 1024, 2048, 4096, 8192, 16384],
+      "enum": [0, 256, 512, 1024, 2048, 4096, 8192, 16384],
       "default": 1024,
       "minimum": 0
     },
