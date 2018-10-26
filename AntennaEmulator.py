@@ -218,7 +218,9 @@ def main(argv):
                     control_gpr_message_recieved = False
                     send_data = False
 
-        if GPS_time > ig.FIFTH_OF_SEC and ig.GPS_TELEM_ENABLED == True:            
+        #if GPS_time > ig.FIFTH_OF_SEC and ig.GPS_TELEM_ENABLED == True:
+        if GPS_time > ig.HALF_OF_SEC:
+
             # this debug flag will feed in GPS strings from a .DZG file that was collected with a production UtilityScan system 
             if ig.USE_NEMA_TALKER == False:
                 if GPS_file_line == len(GPS_data):

@@ -68,6 +68,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
 
     global FIFTH_OF_SEC
     global TENTH_OF_SEC
+    global HALF_OF_SEC
     global ONE_SEC
     global FIVE_SEC
     global TEN_SEC
@@ -107,7 +108,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
     global FILE_LIST_PARSED
 
     ANTENNA_UUID = str(uuid.uuid4())
-    VERSION_NUMBER = "1.008"
+    VERSION_NUMBER = "1.010"
 
     print("Low Frequency Antenna Emulator Version: " + str(VERSION_NUMBER))
     print("ANTENNA_UUID: " + str(ANTENNA_UUID) + "\n" )
@@ -261,6 +262,10 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
     NOW = pendulum.now()
     FIFTH_OF_SEC = NOW.add(seconds=0.2)
     FIFTH_OF_SEC = FIFTH_OF_SEC - NOW
+    
+    NOW = pendulum.now()
+    HALF_OF_SEC = NOW.add(seconds=0.5)
+    HALF_OF_SEC = HALF_OF_SEC - NOW
     
     NOW = pendulum.now()
     ONE_SEC = NOW.add(seconds=1)

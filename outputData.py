@@ -398,7 +398,8 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
                     start += period
                     scan_count+=1
    
-        if GPS_time > ig.FIFTH_OF_SEC and ig.GPS_TELEM_ENABLED == True:            
+        #if GPS_time > ig.FIFTH_OF_SEC and ig.GPS_TELEM_ENABLED == True: 
+        if GPS_time > ig.HALF_OF_SEC:            
             
             if ig.USE_NEMA_TALKER == False:
                 if send_GPS_data == True:
