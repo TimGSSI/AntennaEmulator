@@ -35,7 +35,7 @@ def main(argv):
     nemaTalker = False
     incoming_schema_validation = True
     outgoing_schema_validation = True
-    loopData = True
+    loopData = True 
     debugOutput = False
     web_app = True
 

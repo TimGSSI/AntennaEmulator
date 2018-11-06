@@ -123,6 +123,7 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
     first_output_bin = False
 
     while True:
+
         period = 1.0 / scanRate
 
         if header_skipped == False:
@@ -196,8 +197,6 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
                     totalTickCount = 0
                     fileChange = False
 
-                    print("################################################")    
-                    print("fileName: " + fileName)
                     print("current samples per scan: " + str(samples_per_scan))
                     print("current timerange: " + str(timeRange))
                     print("################################################")
@@ -210,6 +209,46 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
                     scansPerMeter = message['scansPerMeter']
                 if "binSize" in message:
                     binSize = message['binSize']
+
+
+
+                metersPerSecond = scanRate / scansPerMeter
+                ticksPerSecond = ticksPerMeter * metersPerSecond
+                ticksPerScan = ticksPerMeter / scansPerMeter
+                binSize = ticksPerMeter / scansPerMeter
+
+                data_file.close()
+                time.sleep(0.2)
+                #initial_samples = samples_per_scan
+                fileName = ig.FILE_LIST[str(samples_per_scan) + "_" + str(timeRange)]
+                full_path = files_dir + fileName
+                header_skipped = False
+                byte_count = 0
+                scan_count = 0
+                #initial_samples = samples_per_scan
+                size = os.path.getsize(full_path)
+                data_file = open(full_path, 'rb')
+                currentBinNumber = 0
+                fcurrentBinNumber = 0
+                newBinNumber = 0 # bin with the highest value
+                lastBinNumber = 0 # previous bin
+                totalTickCount = 0
+                fileChange = False
+
+                print("current samples per scan: " + str(samples_per_scan))
+                print("current timerange: " + str(timeRange))
+                print("current scansPerMeter: " + str(scansPerMeter))
+                print("################################################")
+
+
+
+
+
+
+
+
+
+
 
         if mode == "swtick":
                 
@@ -404,8 +443,8 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
             if ig.USE_NEMA_TALKER == False:
                 if send_GPS_data == True:
                     if GPS_file_line == len(GPS_data) - 1:
-                        #GPS_file_line = 0 # to make gps file loop endlessly uncomment this line and comment out line below
-                        send_GPS_data = False
+                        GPS_file_line = 0 # to make gps file loop endlessly uncomment this line and comment out line below
+                        #send_GPS_data = False
                         
                     JSON_GPS = mp.prepareGPSMessage(GPS_data[GPS_file_line])
                     
