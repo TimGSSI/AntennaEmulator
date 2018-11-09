@@ -431,12 +431,13 @@ def processMessage(msg, client, orig_samples_per_scan, orig_time_range):
 
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
 
-        if "positionOffsetPs" in json_msg['channels'][0]: 
-            if current_positionOffsetPs % ig.SAMPLING_STEP == 0:
-                valid_positionOffsetPs = current_positionOffsetPs
-                ig.POSITION_OFFSET = current_positionOffsetPs
-            else:
-                raise ValueError('positionOffsetPs value is not evenly divisible by ' + str(ig.SAMPLING_STEP) + '.  Current positionOffsetNs value: ' + str(current_positionOffsetPs))
+        if "channels" in json_msg:
+            if "positionOffsetPs" in json_msg['channels'][0]: 
+                if current_positionOffsetPs % ig.SAMPLING_STEP == 0:
+                    valid_positionOffsetPs = current_positionOffsetPs
+                    ig.POSITION_OFFSET = current_positionOffsetPs
+                else:
+                    raise ValueError('positionOffsetPs value is not evenly divisible by ' + str(ig.SAMPLING_STEP) + '.  Current positionOffsetNs value: ' + str(current_positionOffsetPs))
  
         if current_sampPerScan == current_timeRange:
             valid_timeRange = current_timeRange

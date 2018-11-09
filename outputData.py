@@ -362,8 +362,8 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
                         time.sleep(0.01)
                         lastBinNumber = currentBinNumber
                     
-                if currentBinNumber >= nextBackup:
-                    forwards = False
+                #if currentBinNumber >= nextBackup:
+                #    forwards = False
 
                 if currentBinNumber <= newBinNumber - scansToBackup and prevent_duplicate == False:
                     forwards = True

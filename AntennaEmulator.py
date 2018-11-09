@@ -38,7 +38,7 @@ def main(argv):
     loopData = True 
     debugOutput = False
     compression = False
-    ig.SAMPLING_STEP = 16000 # 2ns sampling step means 8000ps divisibility, 4ns means 16000ps divisibility
+    ig.SAMPLING_STEP = 8000 # 2ns sampling step means 8000ps divisibility, 4ns means 16000ps divisibility
 
     ig.initialize_globals(test_topics, nemaTalker, incoming_schema_validation, outgoing_schema_validation, loopData, debugOutput, compression)
 
