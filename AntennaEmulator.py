@@ -37,10 +37,9 @@ def main(argv):
     outgoing_schema_validation = True
     loopData = True 
     debugOutput = False
-    compression = False
-    ig.SAMPLING_STEP = 8000 # 2ns sampling step means 8000ps divisibility, 4ns means 16000ps divisibility
+    web_app = True
 
-    ig.initialize_globals(test_topics, nemaTalker, incoming_schema_validation, outgoing_schema_validation, loopData, debugOutput, compression)
+    ig.initialize_globals(test_topics, nemaTalker, incoming_schema_validation, outgoing_schema_validation, loopData, debugOutput, web_app)
 
     broker="localhost"
 
@@ -52,8 +51,7 @@ def main(argv):
 
     lastBatteryCheck = pendulum.parse(mp.prepareTimestamp())
     lastGPSCheck = pendulum.parse(mp.prepareTimestamp())
-    # note: On Windows, If the mosquito broker https://mosquitto.org/download/ is NOT running one will see the following connect() error:
-    # ConnectionRefusedError(10061, 'No connection could be made because the target machine actively refused it', None, 10061, None)
+   
     client.connect(broker)
     client.loop_start()
 

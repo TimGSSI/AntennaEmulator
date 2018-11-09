@@ -363,7 +363,6 @@ def processMessage(msg, client, orig_samples_per_scan, orig_time_range):
                 if "positionOffsetPs" in json_msg['channels'][0]:
                     antenna1['positionOffsetPs'] = json_msg['channels'][0]['positionOffsetPs']
                     current_settings['positionOffsetPs'] = antenna1['positionOffsetPs']
-                    current_positionOffsetPs = json_msg['channels'][0]['positionOffsetPs']
                 if "timeRangeNs" in json_msg['channels'][0]:
                     antenna1['timeRangeNs'] = json_msg['channels'][0]['timeRangeNs']
                     current_settings['timeRangeNs'] = antenna1['timeRangeNs']
@@ -430,14 +429,13 @@ def processMessage(msg, client, orig_samples_per_scan, orig_time_range):
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
 
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
-
-        if "channels" in json_msg:
-            if "positionOffsetPs" in json_msg['channels'][0]: 
-                if current_positionOffsetPs % ig.SAMPLING_STEP == 0:
-                    valid_positionOffsetPs = current_positionOffsetPs
-                    ig.POSITION_OFFSET = current_positionOffsetPs
-                else:
-                    raise ValueError('positionOffsetPs value is not evenly divisible by ' + str(ig.SAMPLING_STEP) + '.  Current positionOffsetNs value: ' + str(current_positionOffsetPs))
+        
+        if "positionOffsetPs" in json_msg: 
+            if current_positionOffsetNs % 8000 == 0:
+                valid_positionOffsetNs = current_positionOffsetNs
+                ig.POSITION_OFFSET = valid_positionOffsetNs
+            else:
+                raise ValueError('positionOffsetNs value is not evenly divisible by 8000.  Current positionOffsetNs value: ' + struct(positionOffsetNs))
  
         if current_sampPerScan == current_timeRange:
             valid_timeRange = current_timeRange
@@ -477,7 +475,7 @@ def processMessage(msg, client, orig_samples_per_scan, orig_time_range):
             print("JSON_MSG: " + str(json_msg))
             
             responseMessage = mp.prepareConfigResponseMessageWithErrors(json_msg, messageWithoutTimestamp, errors)
-            #print("LATEST RESPONSE MESSAGE:" + str(responseMessage))
+            print("LATEST RESPONSE MESSAGE:" + str(responseMessage))
 
         if msg.topic == ig.CONFIG_GPR_TOPIC:
             client.publish(ig.CONFIG_GPR_RESPONSE, responseMessage)

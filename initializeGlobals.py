@@ -15,7 +15,7 @@ def getJSONSchemaObject(file_name):
     return schema_object
 
 # this function initializes variables that are shared between multiple files
-def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, debugOutput, compression):
+def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, debugOutput, web_app):
 
     global Q
 
@@ -30,8 +30,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
     global OUTGOING_SCHEMA_VALIDATION
     global LOOP_DATA
     global DEBUG_OUTPUT
-    global SAMPLING_STEP
-    global USE_COMPRESSION
+    global WEB_APP
 
     global GPS_NMEA_TOPIC
     global BATTERY_TOPIC
@@ -109,7 +108,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
     global FILE_LIST_PARSED
 
     ANTENNA_UUID = str(uuid.uuid4())
-    VERSION_NUMBER = "1.012"
+    VERSION_NUMBER = "1.010"
 
     print("Low Frequency Antenna Emulator Version: " + str(VERSION_NUMBER))
     print("ANTENNA_UUID: " + str(ANTENNA_UUID) + "\n" )
@@ -250,12 +249,12 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
         DEBUG_OUTPUT = True
     else: 
         DEBUG_OUTPUT = False
-    
-    if compression == True:
-        USE_COMPRESSION = True
-    else:
-        USE_COMPRESSION = False
 
+    if web_app == True:
+        WEB_APP = True
+    else:
+        WEB_APP = False
+    
     NOW = pendulum.now()
     TENTH_OF_SEC = NOW.add(seconds=0.1)
     TENTH_OF_SEC = TENTH_OF_SEC - NOW
