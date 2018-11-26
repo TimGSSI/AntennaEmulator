@@ -15,7 +15,7 @@ def getJSONSchemaObject(file_name):
     return schema_object
 
 # this function initializes variables that are shared between multiple files
-def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, debugOutput, web_app):
+def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, debugOutput, compression, two_ns_sampling_step):
 
     global Q
 
@@ -30,7 +30,8 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
     global OUTGOING_SCHEMA_VALIDATION
     global LOOP_DATA
     global DEBUG_OUTPUT
-    global WEB_APP
+    global SAMPLING_STEP
+    global USE_COMPRESSION
 
     global GPS_NMEA_TOPIC
     global BATTERY_TOPIC
@@ -108,7 +109,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
     global FILE_LIST_PARSED
 
     ANTENNA_UUID = str(uuid.uuid4())
-    VERSION_NUMBER = "1.010"
+    VERSION_NUMBER = "1.012"
 
     print("Low Frequency Antenna Emulator Version: " + str(VERSION_NUMBER))
     print("ANTENNA_UUID: " + str(ANTENNA_UUID) + "\n" )
@@ -250,11 +251,16 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
     else: 
         DEBUG_OUTPUT = False
 
-    if web_app == True:
-        WEB_APP = True
-    else:
-        WEB_APP = False
+    if two_ns_sampling_step == True:
+        SAMPLING_STEP = 8000
+    else: 
+        SAMPLING_STEP = 16000
     
+    if compression == True:
+        USE_COMPRESSION = True
+    else:
+        USE_COMPRESSION = False
+
     NOW = pendulum.now()
     TENTH_OF_SEC = NOW.add(seconds=0.1)
     TENTH_OF_SEC = TENTH_OF_SEC - NOW
@@ -302,19 +308,37 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
 
     # creates a dictionary pairing all data files with valid timerange/sampPerScan combinations 
     # The dictionary key is the currently selected samples underscore timerange, example: "512_256"
-    FILE_LIST = {}
-    samps = 512
-    file_number = 1
-    original_timerange = 64
-    timerange = 64
-    valid_timeranges = [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
-    for x in range(0, 5):
-        index = x
-        for y in range(0, 5):
-            combined = str(samps) + "_" + str(valid_timeranges[index])
-            index += 1
-            FILE_LIST[combined] = "FILE_" + str(file_number) + ".DZT"
+    if SAMPLING_STEP == 8000:
+        FILE_LIST = {}
+        samps = 512
+        file_number = 1
+        original_timerange = 64
+        timerange = 64
+        valid_timeranges = [64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
+        for x in range(0, 5):
+            index = x
+            for y in range(0, 5):
+                combined = str(samps) + "_" + str(valid_timeranges[index])
+                index += 1
+                FILE_LIST[combined] = "FILE_" + str(file_number) + ".DZT"
+                file_number += 1
+            samps *= 2
             file_number += 1
-        samps *= 2
+    else:
+        FILE_LIST = {}
+        samps = 512
+        file_number = 1
+        original_timerange = 128
+        timerange = 128
+        valid_timeranges = [128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768]
+        for x in range(0, 5):
+            index = x
+            file_number += 1
+            for y in range(0, 5):
+                combined = str(samps) + "_" + str(valid_timeranges[index])
+                index += 1
+                FILE_LIST[combined] = "FILE_" + str(file_number) + ".DZT"
+                file_number += 1
+            samps *= 2
 
     Q = Queue() #initialize FIFO queue

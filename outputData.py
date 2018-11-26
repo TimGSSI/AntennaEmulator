@@ -14,6 +14,10 @@ import socket
 import math
 import json
 import jsonschema
+
+#if ig.USE_COMPRESSION:
+#	import SquashLibPy
+ 
 from random import randint
 from queue import Queue
 
@@ -110,9 +114,6 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
     tick_high_end = 160
     tick_low_end = 110
 
-    #tick_high_end = int(binSize * 0.8) 
-    #tick_low_end = int(binSize * 0.3)
-    
     prevent_duplicate = False # this flag protects the nextBackup value from increasing multiple times in a row if it takes multiple ticks to fill a bin
 
     tickRange = [tick_low_end, tick_high_end]
@@ -125,6 +126,28 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
 
     first_output_bin = False
 
+    size_bytes_uncompressed = samples_per_scan * 4          # we assume all compression buffers to be compressed are of the same "scan" size (value in bytes).
+
+    size_bytes_maximum      = size_bytes_uncompressed		# different codec respond differently, we need to reserve at least this much space for returned compression buffer 
+    														# Note: this could be larger than the uncompressed when using very unique data and the Squash API.
+    if ig.USE_COMPRESSION:
+        # TBD alternative Compression codec's to be setup via a UI and settings read dynamically if launched in GUI mode
+        logging         = False                             # additional compression debug logging on/off via True/False
+
+        codec_name      = "zstd"							# "zstd", "brotli", "zpaq" etc... codec names that are listed as suppported, from: "squash -L"
+        optional_params = ""								# can be empty, or something like "level 5"
+
+        # what version of extension dll are we using?
+        version = SquashLibPy.__version__
+
+        # note: query for the worse case compression buffer size, using the input scan size in bytes.
+        # also set the compression codec selected
+        size_bytes_maximum = SquashLibPy.init(0, logging, codec_name, optional_params, size_bytes_uncompressed)
+
+        # Compressed work buffer:
+        byteArrayCompressed     = bytearray(size_bytes_maximum)
+
+    # loop over the data scan source file pumping out the simulated scans:
     while True:
 
         period = 1.0 / scanRate
@@ -234,10 +257,7 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
                 newBinNumber = 0 # bin with the highest value
                 lastBinNumber = 0 # previous bin
                 totalTickCount = 0
-                fileChange = False 
-
-                #tick_high_end = int(binSize * 0.8) 
-                #tick_low_end = int(binSize * 0.3)
+                fileChange = False
 
                 print("current samples per scan: " + str(samples_per_scan))
                 print("current timerange: " + str(timeRange))
@@ -276,7 +296,21 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
                     data = data[0]
 
                     byte_count += len(data_chunk) # running byte count
-                    encoded_data = base64.b64encode(data_chunk)
+                    
+                    if ig.USE_COMPRESSION:
+                        size_compressed         = SquashLibPy.compress(0, data_chunk, byteArrayCompressed)
+                        		
+						# we encode for length size_compressed!  not whole byteArrayCompressed!
+                        encoded_data            = base64.b64encode(byteArrayCompressed[0:size_compressed])
+                        
+                        # clear/reset:  (don't bother for now)
+                        # del byteArrayCompressed[0:size_bytes_maximum-1]
+
+                    else:
+                        encoded_data = base64.b64encode(data_chunk)
+
+                    # This need explaining... we decoding the buffer we just encoded?
+                    #encoded_data = base64.b64encode(data_chunk)
                     encoded_data = encoded_data.decode("utf-8")
                         
                     JSON_GPR = mp.prepareGPRSurveyMessage((currentBinNumber - 1), encoded_data, distance)
@@ -352,10 +386,20 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
                 data = [data_chunk[0], data_chunk[1], data_chunk[2], data_chunk[3]]
                 data = struct.unpack("I", bytearray(data))
                 data = data[0]
-                print("data variable: " + str(data))
 
                 byte_count += len(data_chunk) # running byte count
-                encoded_data = base64.b64encode(data_chunk)
+                if ig.USE_COMPRESSION:
+                    #byteArrayCompressed     = bytearray(size_bytes_maximum)
+                    size_compressed         = SquashLibPy.compress(0, data_chunk, byteArrayCompressed)
+                        		
+					# encode for length size_compressed!  not whole byteArrayCompressed!
+                    encoded_data            = base64.b64encode(byteArrayCompressed[0:size_compressed])
+                        
+                    # clear/reset:  (don't bother for now)
+                    # del byteArrayCompressed[0:size_bytes_maximum-1]
+
+                else:
+                    encoded_data = base64.b64encode(data_chunk)
                 encoded_data = encoded_data.decode("utf-8")
 
                 JSON_GPR = mp.prepareGPRCombinedMessage(scan_count, totalTickCount, encoded_data, distance)
@@ -385,7 +429,19 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
                     data = data[0]
 
                     byte_count += len(data_chunk) # running byte count
-                    encoded_data = base64.b64encode(data_chunk)
+                    if ig.USE_COMPRESSION:
+                        #byteArrayCompressed     = bytearray(size_bytes_maximum)
+                        # ('SquashLibPy_compress() argument 2 must be str, not bytes',)
+                        size_compressed         = SquashLibPy.compress(0, data_chunk, byteArrayCompressed)
+                        		
+						# encode for length size_compressed!  not whole byteArrayCompressed!
+                        encoded_data            = base64.b64encode(byteArrayCompressed[0:size_compressed])
+                        
+                        # clear/reset:  (don't bother for now)
+                        # del byteArrayCompressed[0:size_bytes_maximum-1]
+
+                    else:
+                        encoded_data = base64.b64encode(data_chunk)
                     encoded_data = encoded_data.decode("utf-8")
                     JSON_GPR = mp.prepareGPRFreerunMessage(scan_count, encoded_data)
                     if ig.DEBUG_OUTPUT == True:
@@ -414,7 +470,20 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
                     data = struct.unpack("I", bytearray(data))
                     data = data[0]
 
-                    encoded_data = base64.b64encode(data_chunk)
+                    if ig.USE_COMPRESSION:
+                        #byteArrayCompressed     = bytearray(size_bytes_maximum)
+                        size_compressed         = SquashLibPy.compress(0, data_chunk, byteArrayCompressed)
+                        		
+						# encode for length size_compressed!  not whole byteArrayCompressed!
+                        encoded_data            = base64.b64encode(byteArrayCompressed[0:size_compressed])
+                        
+                        # clear/reset:  (don't bother for now)
+                        # del byteArrayCompressed[0:size_bytes_maximum-1]
+                        # or by:
+                        # byteArrayCompressed[:] = b'\x00' * len(ba)
+
+                    else:
+                        encoded_data = base64.b64encode(data_chunk)
                     encoded_data = encoded_data.decode("utf-8")
 
                     skip_to_file_position = True

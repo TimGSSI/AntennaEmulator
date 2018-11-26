@@ -298,7 +298,8 @@ def processMessage(msg, client, orig_samples_per_scan, orig_time_range):
         errorMsg = False
 
         json_msg = json.loads(msg.payload.decode('utf-8'))
-        
+        print("LATEST JSON_MSG: ")
+        print(json_msg) 
         if str(json_msg) == "{}":
             full_message = mp.prepareEmptyConfigGprResponse(current_settings)
 
@@ -363,6 +364,7 @@ def processMessage(msg, client, orig_samples_per_scan, orig_time_range):
                 if "positionOffsetPs" in json_msg['channels'][0]:
                     antenna1['positionOffsetPs'] = json_msg['channels'][0]['positionOffsetPs']
                     current_settings['positionOffsetPs'] = antenna1['positionOffsetPs']
+                    current_positionOffsetPs = json_msg['channels'][0]['positionOffsetPs']
                 if "timeRangeNs" in json_msg['channels'][0]:
                     antenna1['timeRangeNs'] = json_msg['channels'][0]['timeRangeNs']
                     current_settings['timeRangeNs'] = antenna1['timeRangeNs']
@@ -429,53 +431,96 @@ def processMessage(msg, client, orig_samples_per_scan, orig_time_range):
         messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
 
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
-        
-        if "positionOffsetPs" in json_msg: 
-            if current_positionOffsetNs % 8000 == 0:
-                valid_positionOffsetNs = current_positionOffsetNs
-                ig.POSITION_OFFSET = valid_positionOffsetNs
-            else:
-                raise ValueError('positionOffsetNs value is not evenly divisible by 8000.  Current positionOffsetNs value: ' + struct(positionOffsetNs))
- 
-        if current_sampPerScan == current_timeRange:
-            valid_timeRange = current_timeRange
-        elif (current_sampPerScan * 2) == current_timeRange:
-            valid_timeRange = current_timeRange
-        elif (current_sampPerScan / 2) == current_timeRange:
-            valid_timeRange = current_timeRange
-        elif (current_sampPerScan / 4) == current_timeRange:
-            valid_timeRange = current_timeRange
-        elif (current_sampPerScan / 8) == current_timeRange:
-            valid_timeRange = current_timeRange
-        else:
-            print("NOT a valid time range/samples per scan pairing.  Reverting to previous values")
-            errorMsg = "True"
-            errors = [] 
-            fullMessage = json.loads(msg.payload.decode('utf-8'))
-            if "samples_per_scan" in values:
-                values['samples_per_scan'] = orig_samples_per_scan
-                errors = "{\"samples\":" + str(current_settings['samples']) + "}"
-                current_settings["samples"] = orig_samples_per_scan
-                fullMessage["samples"] = orig_samples_per_scan
-            if "antenna1" in values:
-                values['antenna1']['timeRangeNs'] = orig_time_range
-                errors = "{\"channels\":[{\"timeRangeNs\":" + str(current_settings['timeRangeNs']) + "}]}"
-                current_settings['timeRangeNs'] = orig_time_range
-                fullMessage['channels'][0]['timeRangeNs'] = orig_time_range
 
-            messageWithoutTimestamp = json.dumps(fullMessage)
-            #messageWithoutTimestamp = json.loads(fullMessage)
-            if "timestamp" in messageWithoutTimestamp:
-                del messageWithoutTimestamp['timestamp']
-            messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
-            messageWithoutTimestamp = json.loads(messageWithoutTimestamp)
+        if "channels" in json_msg:
+            if "positionOffsetPs" in json_msg['channels'][0]: 
+                if current_positionOffsetPs % ig.SAMPLING_STEP == 0:
+                    valid_positionOffsetPs = current_positionOffsetPs
+                    ig.POSITION_OFFSET = current_positionOffsetPs
+                else:
+                    raise ValueError('positionOffsetPs value is not evenly divisible by ' + str(ig.SAMPLING_STEP) + '.  Current positionOffsetNs value: ' + str(current_positionOffsetPs))
+        
+        if ig.SAMPLING_STEP == 8000:
+            if current_sampPerScan == current_timeRange:
+                valid_timeRange = current_timeRange
+            elif (current_sampPerScan * 2) == current_timeRange:
+                valid_timeRange = current_timeRange
+            elif (current_sampPerScan / 2) == current_timeRange:
+                valid_timeRange = current_timeRange
+            elif (current_sampPerScan / 4) == current_timeRange:
+                valid_timeRange = current_timeRange
+            elif (current_sampPerScan / 8) == current_timeRange:
+                valid_timeRange = current_timeRange
+            else:
+                print("NOT a valid time range/samples per scan pairing.  Reverting to previous values")
+                errorMsg = "True"
+                errors = [] 
+                fullMessage = json.loads(msg.payload.decode('utf-8'))
+                if "samples_per_scan" in values:
+                    values['samples_per_scan'] = orig_samples_per_scan
+                    errors = "{\"samples\":" + str(current_settings['samples']) + "}"
+                    current_settings["samples"] = orig_samples_per_scan
+                    fullMessage["samples"] = orig_samples_per_scan
+                if "antenna1" in values:
+                    values['antenna1']['timeRangeNs'] = orig_time_range
+                    errors = "{\"channels\":[{\"timeRangeNs\":" + str(current_settings['timeRangeNs']) + "}]}"
+                    current_settings['timeRangeNs'] = orig_time_range
+                    fullMessage['channels'][0]['timeRangeNs'] = orig_time_range
+
+                messageWithoutTimestamp = json.dumps(fullMessage)
+                #messageWithoutTimestamp = json.loads(fullMessage)
+                if "timestamp" in messageWithoutTimestamp:
+                    del messageWithoutTimestamp['timestamp']
+                messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
+                messageWithoutTimestamp = json.loads(messageWithoutTimestamp)
             
-            #json_msg = json.dumps(str(msg.payload))
-            json_msg = json.dumps(json_msg)
-            print("JSON_MSG: " + str(json_msg))
+                #json_msg = json.dumps(str(msg.payload))
+                json_msg = json.dumps(json_msg)
+                print("JSON_MSG: " + str(json_msg))
             
-            responseMessage = mp.prepareConfigResponseMessageWithErrors(json_msg, messageWithoutTimestamp, errors)
-            print("LATEST RESPONSE MESSAGE:" + str(responseMessage))
+                responseMessage = mp.prepareConfigResponseMessageWithErrors(json_msg, messageWithoutTimestamp, errors)
+                #print("LATEST RESPONSE MESSAGE:" + str(responseMessage))
+
+        else:
+            if current_sampPerScan == current_timeRange:
+                valid_timeRange = current_timeRange
+            elif (current_sampPerScan * 2) == current_timeRange:
+                valid_timeRange = current_timeRange
+            elif (current_sampPerScan * 4) == current_timeRange:
+                valid_timeRange = current_timeRange
+            elif (current_sampPerScan / 2) == current_timeRange:
+                valid_timeRange = current_timeRange
+            elif (current_sampPerScan / 4) == current_timeRange:
+                valid_timeRange = current_timeRange
+            else:
+                print("NOT a valid time range/samples per scan pairing.  Reverting to previous values")
+                errorMsg = "True"
+                errors = [] 
+                fullMessage = json.loads(msg.payload.decode('utf-8'))
+                if "samples_per_scan" in values:
+                    values['samples_per_scan'] = orig_samples_per_scan
+                    errors = "{\"samples\":" + str(current_settings['samples']) + "}"
+                    current_settings["samples"] = orig_samples_per_scan
+                    fullMessage["samples"] = orig_samples_per_scan
+                if "antenna1" in values:
+                    values['antenna1']['timeRangeNs'] = orig_time_range
+                    errors = "{\"channels\":[{\"timeRangeNs\":" + str(current_settings['timeRangeNs']) + "}]}"
+                    current_settings['timeRangeNs'] = orig_time_range
+                    fullMessage['channels'][0]['timeRangeNs'] = orig_time_range
+
+                messageWithoutTimestamp = json.dumps(fullMessage)
+                #messageWithoutTimestamp = json.loads(fullMessage)
+                if "timestamp" in messageWithoutTimestamp:
+                    del messageWithoutTimestamp['timestamp']
+                messageWithoutTimestamp = json.dumps(messageWithoutTimestamp)
+                messageWithoutTimestamp = json.loads(messageWithoutTimestamp)
+            
+                #json_msg = json.dumps(str(msg.payload))
+                json_msg = json.dumps(json_msg)
+                print("JSON_MSG: " + str(json_msg))
+            
+                responseMessage = mp.prepareConfigResponseMessageWithErrors(json_msg, messageWithoutTimestamp, errors)
+                #print("LATEST RESPONSE MESSAGE:" + str(responseMessage))
 
         if msg.topic == ig.CONFIG_GPR_TOPIC:
             client.publish(ig.CONFIG_GPR_RESPONSE, responseMessage)
