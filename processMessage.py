@@ -298,8 +298,6 @@ def processMessage(msg, client, orig_samples_per_scan, orig_time_range):
         errorMsg = False
 
         json_msg = json.loads(msg.payload.decode('utf-8'))
-        print("LATEST JSON_MSG: ")
-        print(json_msg) 
         if str(json_msg) == "{}":
             full_message = mp.prepareEmptyConfigGprResponse(current_settings)
 
