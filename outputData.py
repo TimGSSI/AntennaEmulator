@@ -181,6 +181,7 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
                     scanRate = message['scanRate']
                 if "mode" in message:
                     mode = message['mode']
+                    fileChange = True
                 if "antenna1" in message:
                     if "timeRangeNs" in message['antenna1']:
                         if initial_timeRange != message['antenna1']['timeRangeNs']:
