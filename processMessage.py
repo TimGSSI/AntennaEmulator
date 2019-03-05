@@ -22,7 +22,15 @@ def processMessage(msg, client, orig_samples_per_scan, orig_time_range):
     cs.close()
     
     current_settings = json.loads(current_settings)
- 
+
+    if msg.topic == ig.CONFIG_DEVICE:
+
+        json_msg = json.loads(msg.payload.decode('utf-8'))
+
+        if len(json_msg) == 0:
+            responseMessage = mp.prepareEmptyConfigDeviceResponse()
+            client.publish(ig.CONFIG_DEVICE_RESPONSE, responseMessage)
+
     if msg.topic == ig.CONFIG_STORAGE_ANTENNA:
 
         json_msg = json.loads(msg.payload.decode('utf-8'))
@@ -226,6 +234,8 @@ def processMessage(msg, client, orig_samples_per_scan, orig_time_range):
         json_msg = json.loads(msg.payload.decode('utf-8'))
         
         if str(json_msg) == "{}":
+            print("current_settings['scansPerMeter']: ")
+            print(current_settings['scansPerMeter'])
             full_message = mp.prepareEmptyConfigDmiResponse(current_settings)
 
             messageWithoutTimestamp = json.loads(full_message)
@@ -298,6 +308,7 @@ def processMessage(msg, client, orig_samples_per_scan, orig_time_range):
         errorMsg = False
 
         json_msg = json.loads(msg.payload.decode('utf-8'))
+        
         if str(json_msg) == "{}":
             full_message = mp.prepareEmptyConfigGprResponse(current_settings)
 
@@ -430,13 +441,12 @@ def processMessage(msg, client, orig_samples_per_scan, orig_time_range):
 
         responseMessage = mp.prepareControlResponseMessage(fullMessage, messageWithoutTimestamp)
 
-        if "channels" in json_msg:
-            if "positionOffsetPs" in json_msg['channels'][0]: 
-                if current_positionOffsetPs % ig.SAMPLING_STEP == 0:
-                    valid_positionOffsetPs = current_positionOffsetPs
-                    ig.POSITION_OFFSET = current_positionOffsetPs
-                else:
-                    raise ValueError('positionOffsetPs value is not evenly divisible by ' + str(ig.SAMPLING_STEP) + '.  Current positionOffsetNs value: ' + str(current_positionOffsetPs))
+        if "positionOffsetPs" in json_msg['channels'][0]: 
+            if current_positionOffsetPs % ig.SAMPLING_STEP == 0:
+                valid_positionOffsetPs = current_positionOffsetPs
+                ig.POSITION_OFFSET = current_positionOffsetPs
+            else:
+                raise ValueError('positionOffsetPs value is not evenly divisible by ' + str(ig.SAMPLING_STEP) + '.  Current positionOffsetNs value: ' + str(current_positionOffsetPs))
         
         if ig.SAMPLING_STEP == 8000:
             if current_sampPerScan == current_timeRange:

@@ -43,6 +43,25 @@ def prepareBatteryMessage(capacity, battery_time):
 
     return battMessage
 
+def prepareEmptyConfigDeviceResponse():
+
+    timestamp = prepareTimestamp()
+
+    configMessage = """
+{
+  "timestamp": "%s", 
+  "request": {}, 
+  "result": {
+    "firmware": "RTS200-RAW8KE.rbf", 
+    "model": "LF18", 
+    "serial": "95676", 
+    "version": "0.1.dev560+g5492283"
+  }
+}""" % (timestamp) 
+
+    #print(battMessage)
+
+    return configMessage
 def prepareEmptyConfigGprResponse(current_settings):
 
     timestamp = prepareTimestamp()

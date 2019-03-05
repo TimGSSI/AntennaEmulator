@@ -108,11 +108,11 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
     scan_count = 0
     totalTickCount = 0
 
-    #tick_high_end = 160
-    #tick_low_end = 110
+    #tick_high_end = 250
+    #tick_low_end = 150
 
-    tick_high_end = int(binSize * 0.70)
-    tick_low_end = int(binSize * 0.30)
+    tick_high_end = 160
+    tick_low_end = 110
 
     prevent_duplicate = False # this flag protects the nextBackup value from increasing multiple times in a row if it takes multiple ticks to fill a bin
 
@@ -181,7 +181,6 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
                     scanRate = message['scanRate']
                 if "mode" in message:
                     mode = message['mode']
-                    fileChange = True
                 if "antenna1" in message:
                     if "timeRangeNs" in message['antenna1']:
                         if initial_timeRange != message['antenna1']['timeRangeNs']:
@@ -242,10 +241,6 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
                 ticksPerScan = ticksPerMeter / scansPerMeter
                 binSize = ticksPerMeter / scansPerMeter
 
-                tick_high_end = int(binSize * 0.70)
-                tick_low_end = int(binSize * 0.30)
-
-                tickRange = [tick_low_end, tick_high_end]
                 data_file.close()
                 time.sleep(0.2)
                 #initial_samples = samples_per_scan
@@ -367,8 +362,8 @@ def output_data(samples_per_scan, timeRange, client, send_data, mode, scanRate, 
                         time.sleep(0.01)
                         lastBinNumber = currentBinNumber
                     
-                #if currentBinNumber >= nextBackup:
-                #    forwards = False
+                if currentBinNumber >= nextBackup:
+                    forwards = False
 
                 if currentBinNumber <= newBinNumber - scansToBackup and prevent_duplicate == False:
                     forwards = True

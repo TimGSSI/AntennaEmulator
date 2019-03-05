@@ -52,6 +52,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
     global CONTROL_BATTERY_STATE
     global STATUS_ID
     global CONFIG_STORAGE_ANTENNA
+    global CONFIG_DEVICE
     global RESTORE_SAVED_SETTINGS
 
     global CONFIG_GPR_RESPONSE
@@ -66,6 +67,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
     global CONTROL_BATTERY_STATE_RESPONSE
     global STATUS_ID_RESPONSE
     global CONFIG_STORAGE_ANTENNA_RESPONSE
+    global CONFIG_DEVICE_RESPONSE
 
     global FIFTH_OF_SEC
     global TENTH_OF_SEC
@@ -167,6 +169,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
         DMI_TOPIC = "test/telem/dmi/formatted"
         STATUS_ID = "test/status/id"
         CONFIG_STORAGE_ANTENNA = "test/config/storage/ant"
+        CONFIG_DEVICE = "test/config/device"
 
         # incoming messages
         CONFIG_DEVICE_TOPIC = "test/config/device"
@@ -195,6 +198,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
         CONTROL_DMI_STATE_RESPONSE = "test/response/control/dmi/state"
         STATUS_ID_RESPONSE = "test/response/status/id"
         CONFIG_STORAGE_ANTENNA_RESPONSE = "test/response/config/storage/ant"
+        CONFIG_DEVICE_RESPONSE = "test/response/config/device"
 
     else:
         # outgoing messages
@@ -205,6 +209,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
         DMI_TOPIC = "telem/dmi/formatted"
         STATUS_ID = "status/id"
         CONFIG_STORAGE_ANTENNA = "config/storage/ant"
+        CONFIG_DEVICE = "config/device"
 
         # incoming messages
         CONFIG_DEVICE_TOPIC = "config/device"
@@ -233,6 +238,7 @@ def initialize_globals(test_topics, nemaTalker, incoming, outgoing, loopData, de
         CONTROL_DMI_STATE_RESPONSE = "response/control/dmi/state"
         STATUS_ID_RESPONSE = "response/status/id"
         CONFIG_STORAGE_ANTENNA_RESPONSE = "response/config/storage/ant"
+        CONFIG_DEVICE_RESPONSE = "response/config/device"
 
         RESTORE_SAVED_SETTINGS = "restore/settings"
 
